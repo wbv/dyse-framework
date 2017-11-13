@@ -1,0 +1,4 @@
+*out*
+bin/
+*.txt
+.DS_Store
