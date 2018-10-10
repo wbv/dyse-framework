@@ -4,4 +4,7 @@ Program Description: The following folders contain hardware simulator for differ
 
 Version: Latest 08/03/2018
 
-Authors: Gilboy, Kevin Michael
+Reference: Gilboy, K., Sayed, K., Sundaram, N., Bocan, K., Miskov-Zivanov, N. "A Faster DiSH: Hardware 
+Implementation of a 
+Discrete Cell Signaling Network Simulator." In IEEE International Symposium on Circuits and Systems (ISCAS), 
+2018. DOI: 10.1109/ISCAS.2018.8350960
