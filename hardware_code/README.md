@@ -4,7 +4,4 @@ Program Description: The following folders contain hardware simulator for differ
 
 Version: Latest 08/03/2018
 
-Reference: Gilboy, K., Sayed, K., Sundaram, N., Bocan, K., Miskov-Zivanov, N. "A Faster DiSH: Hardware 
-Implementation of a 
-Discrete Cell Signaling Network Simulator." In IEEE International Symposium on Circuits and Systems (ISCAS), 
-2018. DOI: 10.1109/ISCAS.2018.8350960
+Reference: K. Gilboy, K. Sayed, N. Sundaram, K. Bocan, N. Miskov-Zivanov. “A Faster DiSH: Hardware Implementation of a Discrete Cell Signaling Network Simulator,” arXiv:1811.07861 [q-bio.MN, cs.ET], Nov. 2018.
