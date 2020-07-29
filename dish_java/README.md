@@ -1,3 +1,5 @@
+# DiSH Simulator (Java)
+
 This is a JAVA program to do simulation on biological models. The original program is written by Yu-Hsin Kuo, and I want to thank Howard fot his contribution to the formatting for model checker. If you are going to use this simulator, please cite the paper:
 
 Khaled Sayed, Yu-Hsin Kuo, Anuva Kulkarni, and Natasa Miskov-Zivanov, "DiSH simulator: Capturing dynamics of cellular signaling with heterogeneous knowledge," in 2017 Winter Simulation Conference (WSC), 2017, pp. 896-907.
