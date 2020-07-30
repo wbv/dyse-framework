@@ -52,6 +52,7 @@ plots = plot_average([traces], plot_elements)
 Example model: `examples/models/example_model_Tcell.xlsx`
 
 Required columns:
+
 - __Variable__ : unique identifier
     - only letters, numbers, and underscores
     - must not start with a number
@@ -91,6 +92,7 @@ Required columns:
     - randomize with input 'r' or 'random'
 
 Optional columns:
+
 - __Levels__
     - number of discrete variable levels for that element (default 3)
 - __Spontaneous__
