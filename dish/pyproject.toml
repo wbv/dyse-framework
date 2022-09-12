@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "dish"
+version = "2.0.1"
+description = "Discrete Stochastic Heterogeneous Simulator"
+authors = ["MeLoDy Lab <www.nmzlab.pitt.edu>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+matplotlib = "^3.5.3"
+networkx = "^2.8.6"
+numpy = "^1.23.3"
+pandas = "^1.4.4"
+xlrd = "^2.0.1"
+py2cytoscape = "^0.7.1"
+PyQt5 = "^5.15.7"
+seaborn = "^0.12.0"
+openpyxl = "^3.0.10"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
