@@ -93,7 +93,7 @@ class MainWindow(QMainWindow):
         self.setFixedSize(self.size())
 
         # model table view
-        self.ui.tv_influenceSet_view.verticalHeader().setMaximumWidth(self.ui.tv_influenceSet_view.width()/4)
+        self.ui.tv_influenceSet_view.verticalHeader().setMaximumWidth(int(self.ui.tv_influenceSet_view.width()/4))
 
         # connect control functions
         # model
