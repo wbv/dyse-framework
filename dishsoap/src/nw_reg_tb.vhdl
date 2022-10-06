@@ -1,6 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 
+
 entity nw_reg_tb is
 	generic (
 		N : natural := 3
@@ -26,10 +27,14 @@ architecture test of nw_reg_tb is
 	-- uut signals
 	signal state_next, state: std_logic_vector(N - 1 downto 0);
 	signal en, rst: std_logic;
-	signal clk: std_logic := '0';
+	-- clock starts high to align rising edge to CLK_PERIOD intervals
+	signal clk: std_logic := '1';
 
-	-- test variables
+	-- flag for test completion
 	shared variable test_complete : boolean := false;
+
+	-- period for the main testbench's clock
+	constant CLK_PERIOD: time := 10 ns;
 begin
 
 	uut: nw_reg port map (
@@ -41,40 +46,79 @@ begin
 		rst => rst
 	);
 
--- clock: do nothing for 5ns, then run on 10ns clock period until test_complete
+-- clock: oscillate until test_complete
 clock: process
 begin
 	if test_complete = true then
+		-- assert "undetermined" signal when done, for fun
+		clk <= 'U';
+		wait for CLK_PERIOD;
 		wait;
 	end if;
 
-	wait for 5 ns;
+	wait for (CLK_PERIOD/2);
 	clk <= not clk;
 end process clock;
 
 
--- test bench
+-- the main testbench
 tb: process
 begin
-	wait for 5 ns; -- wait for clock to go high
-
-	wait for 10 ns;
-	rst <= '1';
+	-- initial states
 	state_next <= "101";
-
-	wait for 10 ns;
+	en <= '0';
 	rst <= '0';
 
-	wait for 10 ns;
-	en <= '1';
+	wait for CLK_PERIOD;
+	rst <= '1';
+	wait for CLK_PERIOD;
+	rst <= '0';
 
-	wait for 10 ns;
+	assert state = "000"
+		report "RST did not reset state";
+
+
+	wait for CLK_PERIOD;
+	en <= '1';
+	wait for CLK_PERIOD;
 	en <= '0';
 
-	wait for 10 ns;
+	assert state = "101"
+		report "EN did not update state";
 
+
+	wait for CLK_PERIOD;
+	state_next <= "011";
+	en <= '1';
+	wait for CLK_PERIOD;
+	en <= '0';
+
+	assert state = "011"
+		report "EN did not update state";
+
+
+	wait for CLK_PERIOD;
+	rst <= '1';
+	wait for CLK_PERIOD;
+	rst <= '0';
+
+	assert state = "000"
+		report "RST did not reset state";
+
+
+	wait for CLK_PERIOD;
+	en <= '0';
+	rst <= '1';
+	wait for CLK_PERIOD;
+	en <= '1';
+	rst <= '0';
+
+	assert state = "000"
+		report "RST did not reset state";
+
+
+	wait for CLK_PERIOD;
 	test_complete := true;
-	assert false report "test_complete" severity note;
 	wait;
 end process tb;
 

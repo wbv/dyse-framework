@@ -1,0 +1,17 @@
+# ignore extensionless files (executables, here)
+# ignore everything, then un-ignore dirs, then un-ignore files with at least one dot
+*
+!*/
+!*.*
+
+# ghdl work/output files
+e~*
+work-*
+*.o
+
+# waveform outputs
+*.ghw
+*.gtkw
+
+# vim
+*.swp
