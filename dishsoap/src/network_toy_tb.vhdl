@@ -71,12 +71,12 @@ begin
 		assert state_next = expected_state_next 
 		report "Truth table invalid at " & natural'image(index) & lf
 			& " --> "
-			& std_logic'image(state_next(0))
+			& std_logic'image(state_next(2))
 			& std_logic'image(state_next(1))
-			& std_logic'image(state_next(2)) & " <> "
-			& std_logic'image(expected_state_next(0))
+			& std_logic'image(state_next(0)) & " <> "
+			& std_logic'image(expected_state_next(2))
 			& std_logic'image(expected_state_next(1))
-			& std_logic'image(expected_state_next(2));
+			& std_logic'image(expected_state_next(0));
 
 		if index >= table'high then
 			test_complete := true;

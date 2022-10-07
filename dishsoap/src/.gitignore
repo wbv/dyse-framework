@@ -4,14 +4,17 @@
 !*/
 !*.*
 
-# ghdl work/output files
+# ignore ghdl work/output files
 e~*
 work-*
 *.o
 
-# waveform outputs
+# ignore waveform outputs
 *.ghw
 *.gtkw
 
-# vim
+# ignore vim
 *.swp
+
+# re-enable Makefile
+!Makefile

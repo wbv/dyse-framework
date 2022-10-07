@@ -25,7 +25,7 @@ Actions:
 }
 
 container_built() {
-	return docker container inspect "$NAME" &>/dev/null ;
+	docker container inspect "$NAME" &>/dev/null ;
 }
 
 if ! command -v docker &>/dev/null \
@@ -50,10 +50,7 @@ while [ $# -gt 0 ]; do
 			  --volume $(pwd)/src:/src \
 			  --workdir /src \
 			  "$BASE_IMAGE" \
-			  sh -c './run-tb.sh \
-			    nw_reg.vhdl \
-			    network_toy.vhdl \
-			  '
+			    sh -c 'make && chown -R --reference=. .'
 			shift
 			;;
 		build )
