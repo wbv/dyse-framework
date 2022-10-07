@@ -50,8 +50,10 @@ while [ $# -gt 0 ]; do
 			  --volume $(pwd)/src:/src \
 			  --workdir /src \
 			  "$BASE_IMAGE" \
-			  sh -c './run-tb.sh'
-			  #--entrypoint bash \
+			  sh -c './run-tb.sh \
+			    nw_reg.vhdl \
+			    network_toy.vhdl \
+			  '
 			shift
 			;;
 		build )
