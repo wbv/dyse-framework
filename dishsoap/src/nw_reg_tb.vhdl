@@ -4,7 +4,7 @@ use ieee.std_logic_1164.all;
 
 entity nw_reg_tb is
 	generic (
-		N : natural := 3
+		N : natural := 4 -- use explicit 4-bit nw_reg
 	);
 end nw_reg_tb;
 
@@ -37,14 +37,18 @@ architecture test of nw_reg_tb is
 	constant CLK_PERIOD: time := 10 ns;
 begin
 
-	uut: nw_reg port map (
-		state      => state,
-		state_next => state_next,
+	uut: nw_reg
+		generic map (
+			N => N
+		)
+		port map (
+			state      => state,
+			state_next => state_next,
 
-		clk => clk,
-		en  => en,
-		rst => rst
-	);
+			clk => clk,
+			en  => en,
+			rst => rst
+		);
 
 -- clock: oscillate until test_complete
 clock: process
@@ -65,7 +69,7 @@ end process clock;
 tb: process
 begin
 	-- initial states
-	state_next <= "101";
+	state_next <= "1010";
 	en <= '0';
 	rst <= '0';
 
@@ -74,7 +78,7 @@ begin
 	wait for CLK_PERIOD;
 	rst <= '0';
 
-	assert state = "000"
+	assert state = "0000"
 		report "RST did not reset state";
 
 
@@ -83,17 +87,17 @@ begin
 	wait for CLK_PERIOD;
 	en <= '0';
 
-	assert state = "101"
+	assert state = "1010"
 		report "EN did not update state";
 
 
 	wait for CLK_PERIOD;
-	state_next <= "011";
+	state_next <= "0011";
 	en <= '1';
 	wait for CLK_PERIOD;
 	en <= '0';
 
-	assert state = "011"
+	assert state = "0011"
 		report "EN did not update state";
 
 
@@ -102,7 +106,7 @@ begin
 	wait for CLK_PERIOD;
 	rst <= '0';
 
-	assert state = "000"
+	assert state = "0000"
 		report "RST did not reset state";
 
 
@@ -113,7 +117,7 @@ begin
 	en <= '1';
 	rst <= '0';
 
-	assert state = "000"
+	assert state = "0000"
 		report "RST did not reset state";
 
 
