@@ -24,12 +24,15 @@ Actions:
 	EOF
 }
 
-container_built() {
-	docker container inspect "$NAME" &>/dev/null ;
+have_docker() {
+	docker --help 2>/dev/null >/dev/null ;
 }
 
-if ! command -v docker &>/dev/null \
-&& ! which docker      &>/dev/null ; then
+container_built() {
+	docker container inspect "$NAME" 2>/dev/null >/dev/null ;
+}
+
+if ! have_docker ; then
 	echo "E: Comand 'docker' not found." >&2
 	echo "E: Docker is needed to run tests on src. Exiting." >&2
 	exit 1
@@ -56,9 +59,10 @@ while [ $# -gt 0 ]; do
 		build )
 			# warn nicely if clean hasn't been done
 			if container_built; then
-				echo "E: container already built." >&2
-				echo "   Hint: To destory current container, run '$0 clean' first." >&2
-				exit 1
+				echo "W: container already built. Skipping '$1'" >&2
+				echo " Hint: To destory current container, run '$0 clean' first." >&2
+				shift
+				continue
 			fi
 			docker create \
 			  --interactive \
@@ -73,24 +77,23 @@ while [ $# -gt 0 ]; do
 		run )
 			# warn nicely if build hasn't been done
 			if ! container_built; then
-				echo "E: container not built." >&2
-				echo "   Hint: run '$0 build' first." >&2
-				exit 1
+				echo "W: container not built. Skipping '$1'" >&2
+				echo " Hint: run '$0 build' first." >&2
+				shift
+				continue
 			fi
 
 			docker start -ia "$NAME"
 			shift
 			;;
 		stop )
+			# stop the container, immediately
 			docker stop -t 0 "$NAME"
 			shift
 			;;
 		clean )
-			# remove the container, offering advice on failure
-			if ! docker rm "$NAME" ; then
-				echo "Hint: run '$0 stop' first." >&2
-			fi
-
+			# remove the container
+			docker rm "$NAME"
 			shift
 			;;
 		help | -h | --help | -? )
