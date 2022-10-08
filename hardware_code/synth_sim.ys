@@ -1,0 +1,13 @@
+#!yosys
+read -sv \
+	SIM/names_I1.sv \
+	SIM/controlpath.sv \
+	SIM/datapath.sv \
+	SIM/dp_components.sv \
+	SIM/logic_t.sv \
+	SIM/top.sv;
+hierarchy -check -top top
+proc; opt;
+memory; opt;
+fsm; opt;
+techmap; opt;
