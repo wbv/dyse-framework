@@ -15,6 +15,7 @@ all: test
 # add entity names of all testbenches here
 TESTBENCHES += nw_reg_tb
 TESTBENCHES += network_toy_tb
+TESTBENCHES += test_pad_tb
 
 # special file GHDL creates when building the library
 WORKFILE := work-obj93.cf
