@@ -25,7 +25,6 @@ entity count_stream_test_v0_1_S_AXI_registers is
 		dbg_tready:    in  std_logic;
 		dbg_cnt_start: in  std_logic;
 		dbg_pointer:   in  std_logic_vector(COUNTER_WIDTH-1 downto 0);
-		dbg_tx_done:   in  std_logic;
 		dbg_tx_en:     in  std_logic;
 		-- User ports ends
 		-- Do not modify the ports beyond this line
@@ -387,8 +386,7 @@ begin
 	slv_reg_dbg(3) <= '0';
 	slv_reg_dbg(4) <= dbg_cnt_start;
 	slv_reg_dbg(7 downto 5) <= (others => '0');
-	slv_reg_dbg(8) <= dbg_tx_done;
-	slv_reg_dbg(9) <= dbg_tx_en;
+	slv_reg_dbg(8) <= dbg_tx_en;
 	slv_reg_dbg(15 downto 10) <= (others => '0');
 	slv_reg_dbg(COUNTER_WIDTH-1+16 downto 16) <= dbg_pointer;
 	slv_reg_dbg(reg_data_out'high downto COUNTER_WIDTH+16) <= (others => '0');

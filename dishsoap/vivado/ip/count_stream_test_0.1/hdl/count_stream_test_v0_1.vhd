@@ -69,7 +69,6 @@ architecture behavior of count_stream_test_v0_1 is
 	signal dbg_tready:    std_logic;
 	signal dbg_cnt_start: std_logic;
 	signal dbg_pointer:   std_logic_vector(COUNTER_WIDTH-1 downto 0);
-	signal dbg_tx_done:   std_logic;
 	signal dbg_tx_en:     std_logic;
 
 	-- component declaration
@@ -92,7 +91,6 @@ architecture behavior of count_stream_test_v0_1 is
 			dbg_tready:    in  std_logic;
 			dbg_cnt_start: in  std_logic;
 			dbg_pointer:   in  std_logic_vector(COUNTER_WIDTH-1 downto 0);
-			dbg_tx_done:   in  std_logic;
 			dbg_tx_en:     in  std_logic;
 			-- User ports ends
 			S_AXI_ACLK:    in  std_logic;
@@ -138,7 +136,6 @@ architecture behavior of count_stream_test_v0_1 is
 			dbg_tready:    out std_logic;
 			dbg_cnt_start: out std_logic;
 			dbg_pointer:   out std_logic_vector(COUNTER_WIDTH-1 downto 0);
-			dbg_tx_done:   out std_logic;
 			dbg_tx_en:     out std_logic;
 			-- User ports ends
 			M_AXIS_ACLK:    in  std_logic;
@@ -169,7 +166,6 @@ begin
 			dbg_tready    => dbg_tready,
 			dbg_cnt_start => dbg_cnt_start,
 			dbg_pointer   => dbg_pointer,
-			dbg_tx_done   => dbg_tx_done,
 			dbg_tx_en     => dbg_tx_en,
 			S_AXI_ACLK    => s_axi_registers_aclk,
 			S_AXI_ARESETN => s_axi_registers_aresetn,
@@ -210,7 +206,6 @@ begin
 			dbg_tready     => dbg_tready,
 			dbg_cnt_start  => dbg_cnt_start,
 			dbg_pointer    => dbg_pointer,
-			dbg_tx_done    => dbg_tx_done,
 			dbg_tx_en      => dbg_tx_en,
 			M_AXIS_ACLK    => m_axis_output_aclk,
 			M_AXIS_ARESETN => m_axis_output_aresetn,
