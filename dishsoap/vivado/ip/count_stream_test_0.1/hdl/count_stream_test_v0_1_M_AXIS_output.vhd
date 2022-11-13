@@ -55,7 +55,8 @@ architecture implementation of count_stream_test_v0_1_M_AXIS_output is
 	type state is (
 		IDLE,         -- initial/idle state
 		INIT_COUNTER, -- delay state, changes to SEND_STREAM after C_M_START_COUNT cycles of delay
-		SEND_STREAM   -- stream data is output through M_AXIS_TDATA
+		SEND_STREAM,  -- stream data is output through M_AXIS_TDATA
+		WAIT_STREAM   -- stream data was read, grab next stream item
 	);
 	signal exec_state: state;
 
@@ -120,14 +121,19 @@ begin
 						end if;
 
 					when SEND_STREAM =>
-						-- increment the word_offset
+						-- if stream data was transmitted, go to wait state
 						if tx_en = '1' then
-							word_offset <= word_offset + 1;
+							exec_state <= WAIT_STREAM;
 						end if;
-						-- enter the idle state only once transmitting the last word
-						if axis_tlast = '1' and tx_en = '1' then
+
+					when WAIT_STREAM =>
+						-- increment the word_offset if we're continuing
+						word_offset <= word_offset + 1;
+						if axis_tlast = '1' then
+							-- idle after the last streamed data
 							exec_state <= IDLE;
 						else
+							-- or continue streaming from next word_offset
 							exec_state <= SEND_STREAM;
 						end if;
 
@@ -138,6 +144,8 @@ begin
 
 	-- assert tvalid whenever we're currently in transmit state
 	axis_tvalid <= '1' when (exec_state = SEND_STREAM) else '0';
+	-- DEBUG: 5 is always valid lmao
+	--axis_tvalid <= '1';
 
 	-- mark the last streamed data
 	axis_tlast <= '1' when (word_offset = num_output_words-1) else '0';
@@ -148,6 +156,8 @@ begin
 	-- the actual output stream data
 	stream_data_out(COUNTER_WIDTH-1        downto 0)             <= std_logic_vector(word_offset + first_output_word);
 	stream_data_out(C_M_AXIS_TDATA_WIDTH-1 downto COUNTER_WIDTH) <= (others => '0');
+	-- DEBUG: just stream 5
+	--stream_data_out(C_M_AXIS_TDATA_WIDTH-1 downto 0) <= (2 => '1', 0 => '1', others => '0');
 	
 	--debug ports
 	dbg_tvalid    <= axis_tvalid;

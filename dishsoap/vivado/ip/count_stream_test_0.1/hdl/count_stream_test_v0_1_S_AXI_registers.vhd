@@ -125,7 +125,7 @@ architecture arch_imp of count_stream_test_v0_1_S_AXI_registers is
 	signal slv_reg1: std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 	signal slv_reg_rden: std_logic;
 	signal slv_reg_wren: std_logic;
-	signal reg_data_out:std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+	signal reg_data_out: std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 	signal byte_index: integer;
 	signal aw_en: std_logic;
 
