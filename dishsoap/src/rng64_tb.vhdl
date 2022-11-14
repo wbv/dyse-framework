@@ -130,11 +130,15 @@ begin
 	rst <= '1', '0' after CLK_PERIOD;
 	wait for CLK_PERIOD;
 
-	for i in 1 to 5 loop
+	-- get 20 random numbers
+	for i in 1 to 20 loop
 		get_next <= '1', '0' after CLK_PERIOD;
 		for t in 1 to LFSR_TIMEOUT loop
 			wait for CLK_PERIOD;
-			exit when valid = '1';
+			if valid = '1' then
+				report "get_next took t = " & integer'image(t) & " cycles";
+				exit;
+			end if;
 		end loop;
 	end loop;
 
