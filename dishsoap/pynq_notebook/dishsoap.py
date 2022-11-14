@@ -1,93 +1,99 @@
 from pynq import DefaultIP, Overlay
 from pynq import allocate
+from pynq.buffer import PynqBuffer
+
+import numpy as np
 
 
-class CountStreamTest(DefaultIP):
+COUNTER_BITS = 16
+COUNTER_MASK = (1 << COUNTER_BITS) - 1
+
+class StreamController(DefaultIP):
+    """
+    Object for the count_stream_test IP core, which has a MMIO register
+    interface that connects to a streaming DMA device.
+    """
+
     def __init__(self, description):
         super().__init__(description)
-        self._low  = 0
-        self._high = 0
 
     @property
-    def low(self):
-        return self._low
+    def low(self) -> int:
+        return self.mmio.read(0x0)
 
     @low.setter
     def low(self, value: int):
         if not isinstance(value, int):
             raise TypeError
+        elif value < 0 or value > COUNTER_MASK:
+            raise ValueError(f"Counter must be between 0 and {COUNTER_MASK}"
+                             f"(got: {value})")
 
-        self._low = value & 0xffff
-        self.mmio.write(0x0, self._low)
+        self.mmio.write(0x0, value)
 
     @property
-    def high(self):
-        return self._high
+    def high(self) -> int:
+        return self.mmio.read(0x4)
 
     @high.setter
     def high(self, value: int):
         if not isinstance(value, int):
             raise TypeError
+        elif value < 0 or value > COUNTER_MASK:
+            raise ValueError(f"Counter must be between 0 and {COUNTER_MASK}"
+                             f"(got: {value})")
 
-        self._high = value & 0xffff
-        self.mmio.write(0x4, self._high)
+        self.mmio.write(0x4, value)
+
+    @property
+    def status(self) -> int:
+        return self.mmio.read(0xc, 1)
+
+    def go(self):
+        self.mmio.write(0x8, 1)
 
     bindto = ['wbv:user:count_stream_test:0.2']
 
-class ExProjOverlay(Overlay):
-    def __init__(self, bitfile_name, download):
-        super().__init__(bitfile_name, download)
 
-        # populate helper attributes for GPIO, etc
-        if self.is_loaded():
-            # LEDs and Buttons are both on axi_gpio_0
-            self.leds = self.axi_gpio_0.channel1
-            self.leds.setlength(4)
-            self.leds.setdirection("out")
-            self.btns = self.axi_gpio_0.channel2
-            self.btns.setlength(4)
-            self.btns.setdirection("in")
 
 class TestDmaStreamOverlay(Overlay):
     def __init__(self, bitfile_name='test_dma_stream.bit'):
         super().__init__(bitfile_name)
-
         if self.is_loaded():
             self.dma = self.axi_dma_0
             self.counter_stream = self.count_stream_test_0
 
-    @staticmethod
-    def chan_status(chan):
-        if chan is None:
-            return ''
-
-        r = chan.running
-        i = chan.idle
-        e = chan.error
+    @property
+    def dma_status(self):
+        self.dma.recvchannel
+        r = self.dma.recvchannel.running
+        i = self.dma.recvchannel.idle
+        e = self.dma.recvchannel.error
 
         return f'Run:{r} Idle:{i} Err:{e}'
 
-    @staticmethod
-    def dump_regs(dma, offset):
+    @property
+    def dma_regs(self):
+        offset = 0x30 # read DMA offset
         info = ''
-        cr = dma.mmio.read(offset + 0x0)
-        sr = dma.mmio.read(offset + 0x4)
-        lo = dma.mmio.read(offset + 0x18)
-        hi = dma.mmio.read(offset + 0x1c)
-        sz = dma.mmio.read(offset + 0x28)
+        cr = self.dma.mmio.read(offset + 0x0)
+        sr = self.dma.mmio.read(offset + 0x4)
+        lo = self.dma.mmio.read(offset + 0x18)
+        hi = self.dma.mmio.read(offset + 0x1c)
+        sz = self.dma.mmio.read(offset + 0x28)
         info += f'CR:   0x{cr:08x}\n'
         info += f'SR:   0x{sr:08x}\n'
         info += f'addr: 0x{hi:08x}{lo:08x}\n'
         info += f'len:  0x{sz:08x}\n'
         return info
 
-    @staticmethod
-    def dump_stream_regs(count_stream):
+    @property
+    def stream_regs(self):
         info = ''
-        lo    = count_stream.read(0x0)
-        hi    = count_stream.read(0x4)
+        lo    = self.counter_stream.read(0x0)
+        hi    = self.counter_stream.read(0x4)
         info += f'StreamCfg: {lo} to {hi}\n'
-        debug = count_stream.read(0xc)
+        debug = self.counter_stream.read(0xc)
         info += f'TVALID: {(debug & (1 << 0)) >> 0} '
         info += f'TLAST: {(debug & (1 << 1)) >> 1} '
         info += f'TREADY: {(debug & (1 << 2)) >> 2}\n'
@@ -96,18 +102,34 @@ class TestDmaStreamOverlay(Overlay):
         info += f'tx_en: {(debug & (1 << 8)) >> 8}\n'
         return info
 
-
     def debug_dma(self):
         if self.dma.recvchannel is not None:
-            print('Recv Channel', self.chan_status(self.dma.recvchannel))
-            print(self.dump_regs(self.dma, 0x30))
+            print('Recv Channel', self.dma_status)
+            print(self.dma_regs)
 
     def debug_stream(self):
-        print(self.dump_stream_regs(self.counter_stream))
+        print(self.stream_regs)
 
     def debug_both(self):
         self.debug_dma()
         self.debug_stream()
+
+    def fill_buffer(self, start: int, array: PynqBuffer):
+        if not isinstance(array, PynqBuffer):
+            raise TypeError('fill_buffer requires array via pynq.allocate()')
+        elif (array.nbytes % 8) != 0:
+            raise TypeError('fill_buffer: array must be 8-byte aligned')
+
+        length = int(array.nbytes // 8)
+
+        self.dma.recvchannel.transfer(array)
+
+        self.counter_stream.low  = start
+        self.counter_stream.high = start + length - 1
+        self.counter_stream.go()
+
+        self.dma.recvchannel.wait()
+        return
 
 
 Overlay = TestDmaStreamOverlay
