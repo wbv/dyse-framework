@@ -58,7 +58,7 @@ while [ $# -gt 0 ]; do
 			;;
 		build )
 			# warn nicely if clean hasn't been done
-			if container_built; then
+			if container_built ; then
 				echo "W: container already built. Skipping '$1'" >&2
 				echo " Hint: To destory current container, run '$0 clean' first." >&2
 				shift
@@ -76,23 +76,21 @@ while [ $# -gt 0 ]; do
 			;;
 		run )
 			# warn nicely if build hasn't been done
-			if ! container_built; then
+			if ! container_built ; then
 				echo "W: container not built. Skipping '$1'" >&2
 				echo " Hint: run '$0 build' first." >&2
 				shift
 				continue
 			fi
 
-			docker start -ia "$NAME"
-			shift
-			;;
-		stop )
-			# stop the container, immediately
-			docker stop -t 0 "$NAME"
+			docker start \
+			  --interactive \
+			  --tty \
+			  --attach \
+			  "$NAME"
 			shift
 			;;
 		clean )
-			# remove the container
 			docker rm "$NAME"
 			shift
 			;;
