@@ -24,28 +24,32 @@ entity dishsoap_ctrl is
 
 		--! current state of the network
 		state: out std_logic_vector(N - 1 downto 0);
-		--! indicates the sim completed
-		sim_done: out std_logic
+		--! state flags
+		state_valid: out std_logic; --! '1' when state should be saved
+		state_last: out std_logic;  --! '1' when state is the last of the sim
+		sim_done: out std_logic;    --! '1' when the sim completed
 
 		--! asynchronous reset, clock
-		areset, clk: in std_logic;
+		areset, clk: in std_logic
 	);
 end dishsoap_ctrl;
 
 architecture behavioral of dishsoap_ctrl is
 	component network_toy is
-		A:   in  std_logic;
-		B:   in  std_logic;
-		C:   in  std_logic;
-		A_n: out std_logic;
-		B_n: out std_logic;
-		C_n: out std_logic
+		port (
+			A:   in  std_logic;
+			B:   in  std_logic;
+			C:   in  std_logic;
+			A_n: out std_logic;
+			B_n: out std_logic;
+			C_n: out std_logic
+		);
 	end component;
-	for network_toy use entity work.network_toy;
+	for net: network_toy use entity work.network_toy;
 
 	component nw_reg is
 		generic (
-			N : natural
+			N: natural
 		);
 		port (
 			state_next:  in  std_logic_vector(N - 1 downto 0);
@@ -60,19 +64,17 @@ architecture behavioral of dishsoap_ctrl is
 			state:       out std_logic_vector(N - 1 downto 0)
 		);
 	end component;
-	for nw_reg use entity work.nw_reg;
+	for reg: nw_reg use entity work.nw_reg;
 
 	type state is (
 		IDLE,
-		SETUP,
-		RUNNING,
-		WAITING
+		RUNNING
 	);
 	signal exec_state: state;
 
 	signal step_counter: unsigned(COUNTER_WIDTH - 1 downto 0);
 	signal max_steps:    unsigned(COUNTER_WIDTH - 1 downto 0);
-	signal start_state:  unsigned(N - 1 downto 0);
+	signal last_state:   std_logic;
 
 	signal net_state:      std_logic_vector(N - 1 downto 0);
 	signal net_state_next: std_logic_vector(N - 1 downto 0);
@@ -101,33 +103,26 @@ begin
 		port map (
 			state_next  => net_state_next,
 			init_state  => net_init_state,
-			rule_sel    => "111", -- synchronous for now
-			force_en    => '0',   -- no forcing function
-			force_elems => "000", -- no forcing function
-			force_vals  => "000", -- no forcing function
+			rule_sel    => (others => '1'), -- synchronous for now
+			force_en    => '0',             -- no forcing function
+			force_elems => (others => '0'), -- no forcing function
+			force_vals  => (others => '0'), -- no forcing function
 			clk         => clk,
 			en          => net_update_en,
 			arst        => nw_reg_reset,
 			state       => net_state
-		)
+		);
 
 
-	process(clk, areset)
+	clk_process: process(clk, areset)
 	begin
 		if areset = '1' then
-			-- reset all signals to safe state
-			exec_state     <= IDLE;
-
-			step_counter   <= (others => '0');
+			-- reset all sim state and disable network update
 			max_steps      <= (others => '0');
-			start_state    <= (others => '0');
-
+			net_init_state <= (others => '0');
+			step_counter   <= (others => '0');
+			nw_reg_reset   <= '1';
 			net_update_en  <= '0';
-
-			-- by default, hold nw_reg in reset
-			nw_reg_reset  <= '1';
-
-		-- TODO re-flesh state machine signals/logic
 		elsif rising_edge(clk) then
 			case (exec_state) is
 				when IDLE =>
@@ -135,35 +130,26 @@ begin
 						-- latch in all configuration
 						max_steps      <= unsigned(num_steps);
 						net_init_state <= init_state;
-
-						-- reset simulation
+						-- initialize simulation variables/devices
 						step_counter   <= to_unsigned(0, step_counter'length);
 						nw_reg_reset   <= '1';
+						net_update_en  <= '0';
 
-						-- next state
-						exec_state <= SETUP;
+						exec_state <= RUNNING;
 					end if;
-				when SETUP =>
-					-- pull nw_reg out of reset
-					nw_reg_reset <= '0';
-					-- step_counter is 1-indexed: increment on setup
-					step_counter <= step_counter + 1;
-					net_update_en <= '1';
-
-					-- next state
-					exec_state <= RUNNING;
 				when RUNNING =>
-					net_update_en <= '0';
-					-- only step the network if the current state has been read
-					-- (or otherwise saved)
+					nw_reg_reset   <= '0';
+					-- only step the network if the current state has been saved
 					if stream_ready = '1' then
-						step_counter <= step_counter + 1;
+						step_counter  <= step_counter + 1;
+						net_update_en <= '1';
+						-- after last state, transition to idle
+						if last_state <= '1' then
+							exec_state <= IDLE;
+						end if;
 					else
-						-- next state
-						exec_state <= WAITING;
+						net_update_en <= '0';
 					end if;
-				when WAITING =>
-
 			end case;
 		end if;
 	end process;
@@ -171,6 +157,10 @@ begin
 	-- network state is always visible
 	state <= net_state;
 
-	sim_done <= step_counter = max_steps;
+	-- indicates last state is being sent, no more will be sent until reconfig
+	last_state <= '1' when step_counter = (max_steps - 1) else '0';
+	state_valid <= '1' when exec_state = RUNNING else '0';
+	state_last <= last_state;
+	sim_done <= '1' when exec_state = IDLE else '0';
 
 end behavioral;
