@@ -18,6 +18,7 @@ TESTBENCHES += network_toy_tb
 TESTBENCHES += test_pad_tb
 TESTBENCHES += lfsr64_tb
 TESTBENCHES += rng64_tb
+TESTBENCHES += dishsoap_ctrl_tb
 
 # special file GHDL creates when building the library
 WORKFILE := work-obj93.cf

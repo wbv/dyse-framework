@@ -3,7 +3,7 @@
 
 library ieee;
 use ieee.std_logic_1164.all;
-use iee.numeric_std.all;
+use ieee.numeric_std.all;
 
 entity dishsoap_ctrl is
 	generic (
@@ -66,11 +66,11 @@ architecture behavioral of dishsoap_ctrl is
 	end component;
 	for reg: nw_reg use entity work.nw_reg;
 
-	type state is (
+	type dishsoap_state is (
 		IDLE,
 		RUNNING
 	);
-	signal exec_state: state;
+	signal exec_state: dishsoap_state;
 
 	signal step_counter: unsigned(COUNTER_WIDTH - 1 downto 0);
 	signal max_steps:    unsigned(COUNTER_WIDTH - 1 downto 0);

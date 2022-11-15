@@ -1,5 +1,6 @@
 library ieee;
 use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 
 
 entity dishsoap_ctrl_tb is
@@ -41,6 +42,9 @@ architecture test of dishsoap_ctrl_tb is
 	signal state_last:   std_logic;
 	signal sim_done:     std_logic;
 	signal areset:       std_logic;
+
+	signal num_steps_int: natural;
+
 	-- clock starts low to move rising edge off CLK_PERIOD intervals
 	signal clk: std_logic := '0';
 
@@ -69,6 +73,9 @@ begin
 			clk          => clk
 		);
 
+	-- use num_steps_int to control num_steps
+	num_steps <= std_logic_vector(to_unsigned(num_steps_int, COUNTER_WIDTH));
+
 -- clock: oscillate until test_complete
 clock: process
 begin
@@ -88,10 +95,10 @@ end process clock;
 tb: process
 begin
 	-- initial states
-	init_state   <= "000";
-	num_steps    <= std_logic_vector(to_unsigned(0, COUNTER_WIDTH));
-	go           <= '0';
-	stream_ready <= '0';
+	init_state    <= "000";
+	num_steps_int <= 0;
+	go            <= '0';
+	stream_ready  <= '0';
 
 	--| TEST: reset
 	wait for CLK_PERIOD;
@@ -101,7 +108,52 @@ begin
 	assert state = "000"
 		report "RST did not reset state";
 
-	-- (TODO: more tests)
+	--| TEST: go, but no ready signal
+	init_state <= "001";
+	num_steps_int <= 10;
+	areset <= '1', '0' after CLK_PERIOD;
+	go <= '1';
+	wait for 2*CLK_PERIOD;
+
+	assert state = "001"
+		report "stream_ready did not inhibit go";
+
+	--| TEST: ensure that 
+
+	--| TEST: stream_ready tells it to run
+	stream_ready <= '1';
+
+	wait for CLK_PERIOD;
+	assert state = "110"
+		report "run: state 1";
+	wait for CLK_PERIOD;
+	assert state = "101"
+		report "run: state 2";
+	wait for CLK_PERIOD;
+	assert state = "100"
+		report "run: state 3";
+	wait for CLK_PERIOD;
+	assert state = "001"
+		report "run: state 4";
+	wait for CLK_PERIOD;
+	assert state = "110"
+		report "run: state 5";
+
+	--| TEST: stream_ready stops it
+	stream_ready <= '0';
+	wait for CLK_PERIOD*2;
+	assert state = "110"
+		report "stream_ready didn't stop sim";
+
+	--| TEST: resume stream and finish it
+	stream_ready <= '1';
+	wait for CLK_PERIOD*10;
+
+	assert sim_done = '1'
+		report "sim didn't finish";
+	assert state_valid = '0'
+		report "sim still reporting valid but should be finished";
+
 
 	--|================|--
 	--| Test Completed |--
