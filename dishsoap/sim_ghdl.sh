@@ -48,8 +48,8 @@ while [ $# -gt 0 ]; do
 		test )
 			docker run \
 			  --rm \
-			  --interactive \
 			  --tty \
+			  --interactive \
 			  --volume $(pwd)/src:/src \
 			  --workdir /src \
 			  "$BASE_IMAGE" \
@@ -85,7 +85,6 @@ while [ $# -gt 0 ]; do
 
 			docker start \
 			  --interactive \
-			  --tty \
 			  --attach \
 			  "$NAME"
 			shift
