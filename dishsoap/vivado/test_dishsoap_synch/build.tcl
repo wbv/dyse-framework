@@ -17,10 +17,6 @@ set_property platform.design_intent.server_managed "false" [current_project]
 set_property platform.design_intent.external_host "false" [current_project]
 set_property platform.design_intent.datacenter "false" [current_project]
 
-# reset any existing runs
-reset_run synth_1
-reset_run impl_1
-
 # start implementation (will synthesize along the way as well)
 launch_runs impl_1 -to_step write_bitstream -jobs 4
 wait_on_run impl_1
