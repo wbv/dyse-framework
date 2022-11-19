@@ -71,6 +71,8 @@ architecture behavioral of dishsoap_ctrl is
 		RUNNING
 	);
 	signal exec_state: dishsoap_state;
+	signal is_idle:    std_logic;
+	signal is_running: std_logic;
 
 	signal step_counter: unsigned(COUNTER_WIDTH - 1 downto 0);
 	signal max_steps:    unsigned(COUNTER_WIDTH - 1 downto 0);
@@ -122,34 +124,33 @@ begin
 			net_init_state <= (others => '0');
 			step_counter   <= (others => '0');
 			nw_reg_reset   <= '1';
-			net_update_en  <= '0';
 		elsif rising_edge(clk) then
 			case (exec_state) is
 				when IDLE =>
+					-- IDLE unless 'go' is asserted
 					if go = '1' then
 						-- latch in all configuration
 						max_steps      <= unsigned(num_steps);
 						net_init_state <= init_state;
 						-- initialize simulation variables/devices
 						step_counter   <= to_unsigned(0, step_counter'length);
+						-- reset network state to init_state (input)
 						nw_reg_reset   <= '1';
-						net_update_en  <= '0';
 
 						exec_state <= RUNNING;
 					end if;
+
 				when RUNNING =>
-					nw_reg_reset   <= '0';
+					nw_reg_reset <= '0';
 					-- only step the network if the current state has been saved
 					if stream_ready = '1' then
 						step_counter  <= step_counter + 1;
-						net_update_en <= '1';
 						-- after last state, transition to idle
-						if last_state <= '1' then
+						if last_state = '1' then
 							exec_state <= IDLE;
 						end if;
-					else
-						net_update_en <= '0';
 					end if;
+
 			end case;
 		end if;
 	end process;
@@ -157,10 +158,20 @@ begin
 	-- network state is always visible
 	state <= net_state;
 
-	-- indicates last state is being sent, no more will be sent until reconfig
-	last_state <= '1' when step_counter = (max_steps - 1) else '0';
-	state_valid <= '1' when exec_state = RUNNING else '0';
-	state_last <= last_state;
-	sim_done <= '1' when exec_state = IDLE else '0';
+	-- last state of current sim run is being sent
+	last_state <= '1' when step_counter = max_steps else '0';
+	-- exec_state indicator signals
+	is_idle    <= '1' when exec_state = IDLE else '0';
+	is_running <= '1' when exec_state = RUNNING else '0';
+
+	-- always update the network state if the stream recipient is ready for it
+	-- and we're still running a sim
+	net_update_en <= stream_ready and not is_idle;
+
+	-- informative state outputs
+	state_valid <= is_running;
+	state_last  <= last_state;
+	sim_done    <= is_idle;
+
 
 end behavioral;

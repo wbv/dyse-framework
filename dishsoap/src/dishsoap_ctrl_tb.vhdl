@@ -99,6 +99,7 @@ begin
 	num_steps_int <= 0;
 	go            <= '0';
 	stream_ready  <= '0';
+	areset        <= '0';
 
 	--| TEST: reset
 	wait for CLK_PERIOD;
@@ -108,17 +109,22 @@ begin
 	assert state = "000"
 		report "RST did not reset state";
 
+
 	--| TEST: go, but no ready signal
+
+	-- first, latch in a state that will change
 	init_state <= "001";
 	num_steps_int <= 10;
 	areset <= '1', '0' after CLK_PERIOD;
-	go <= '1';
+	wait for 2*CLK_PERIOD;
+
+	-- then say go and wait
+	go <= '1', '0' after CLK_PERIOD;
 	wait for 2*CLK_PERIOD;
 
 	assert state = "001"
 		report "stream_ready did not inhibit go";
 
-	--| TEST: ensure that 
 
 	--| TEST: stream_ready tells it to run
 	stream_ready <= '1';
@@ -139,11 +145,13 @@ begin
 	assert state = "110"
 		report "run: state 5";
 
+
 	--| TEST: stream_ready stops it
 	stream_ready <= '0';
 	wait for CLK_PERIOD*2;
 	assert state = "110"
 		report "stream_ready didn't stop sim";
+
 
 	--| TEST: resume stream and finish it
 	stream_ready <= '1';
