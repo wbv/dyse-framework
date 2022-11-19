@@ -1,0 +1,11 @@
+# ignore the generated project directory
+dishsoap_vivado/
+
+# and any Vivado journal/logs
+vivado*.jou
+vivado*.log
+
+# don't want to save bitstream/hwh metadata
+dishsoap_vivado.xsa
+dishsoap_vivado.bit
+dishsoap_vivado.hwh
