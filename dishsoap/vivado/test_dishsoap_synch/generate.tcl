@@ -244,3 +244,4 @@ set_property top ${design_name}_wrapper [current_fileset]
 import_files -fileset constrs_1 -norecurse "../constraintfiles/pynq-z2-v1.0.xdc"
 update_compile_order -fileset sources_1
 
+close_project
