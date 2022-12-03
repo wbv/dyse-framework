@@ -7,7 +7,7 @@ entity dishsoap_v0_1_SIM_STATE_AXIS is
 		--==============================--
 		-- Users to add parameters here --
 		--==============================--
-		NETWORK_SIZE: integer := 3;
+		NETWORK_SIZE: natural := 3;
 		-- also carry register widths in here
 		C_S_AXI_DATA_WIDTH: integer := 64;
 		--=====================================================--
@@ -28,6 +28,8 @@ entity dishsoap_v0_1_SIM_STATE_AXIS is
 		num_steps:  in  std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 		start:      in  std_logic;
 		ready:      out std_logic;
+		-- DEBUG
+		dbg_reg0:   out std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 		--=====================================================--
 		-- NOTE: Do not modify the parameters beyond this line --
 		--=====================================================--
@@ -188,5 +190,17 @@ begin
 	-- the actual output stream data
 	stream_data_out(NETWORK_SIZE-1 downto 0) <= sim_state;
 	stream_data_out(C_M_AXIS_TDATA_WIDTH-1 downto NETWORK_SIZE) <= (others => '0');
+
+	-- DEBUG
+	dbg_reg0(0) <= stream_ready;
+	dbg_reg0(1) <= axis_tvalid;
+	dbg_reg0(2) <= axis_tlast;
+	dbg_reg0(7 downto 3) <= (others => '0');
+	dbg_reg0(NETWORK_SIZE+8-1 downto 8) <= sim_state;
+	dbg_reg0(15 downto NETWORK_SIZE+8) <= (others => '0');
+	dbg_reg0(16) <= sim_state_valid;
+	dbg_reg0(17) <= sim_state_last;
+	dbg_reg0(18) <= sim_done;
+	dbg_reg0(C_S_AXI_DATA_WIDTH-1 downto 19) <= (others => '0');
 
 end implementation;

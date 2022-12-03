@@ -5,7 +5,7 @@ use ieee.numeric_std.all;
 entity dishsoap_v0_1 is
 	generic (
 		-- User parameters here
-
+		NETWORK_SIZE: positive := 3;
 		--=====================================================--
 		-- NOTE: Do not modify the parameters beyond this line --
 		--=====================================================--
@@ -58,11 +58,14 @@ end dishsoap_v0_1;
 architecture behavior of dishsoap_v0_1 is
 	-- intermediate signals
 	signal init_state:    std_logic_vector(NETWORK_SIZE-1 downto 0);
-	signal init_state_lo: std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
-	signal init_state_hi: std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
-	signal num_steps:     std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+	signal init_state_lo: std_logic_vector(C_REGS_AXI_DATA_WIDTH-1 downto 0);
+	signal init_state_hi: std_logic_vector(C_REGS_AXI_DATA_WIDTH-1 downto 0);
+	signal num_steps:     std_logic_vector(C_REGS_AXI_DATA_WIDTH-1 downto 0);
 	signal start:         std_logic;
 	signal ready:         std_logic;
+
+	-- DEBUG
+	signal dbg_reg0:      std_logic_vector(C_REGS_AXI_DATA_WIDTH-1 downto 0);
 
 	-- component declaration
 	component dishsoap_v0_1_REGS_AXI is
@@ -76,6 +79,8 @@ architecture behavior of dishsoap_v0_1 is
 			init_state_lo:  out std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 			init_state_hi:  out std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 			num_steps:      out std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+			-- DEBUG
+			dbg_reg0:       in  std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 			-- original ports
 			S_AXI_ACLK:     in  std_logic;
 			S_AXI_ARESETN:  in  std_logic;
@@ -103,7 +108,7 @@ architecture behavior of dishsoap_v0_1 is
 
 	component dishsoap_v0_1_SIM_STATE_AXIS is
 		generic (
-			NETWORK_SIZE:          integer := 3;
+			NETWORK_SIZE:          natural := 3;
 			C_S_AXI_DATA_WIDTH:    integer := C_REGS_AXI_DATA_WIDTH;
 			-- original ports:
 			C_M_AXIS_TDATA_WIDTH:  integer := C_SIM_STATE_AXIS_TDATA_WIDTH;
@@ -114,6 +119,8 @@ architecture behavior of dishsoap_v0_1 is
 			num_steps:       in  std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 			start:           in  std_logic;
 			ready:           out std_logic;
+			-- DEBUG
+			dbg_reg0:        out std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 			-- original ports:
 			M_AXIS_ACLK:     in  std_logic;
 			M_AXIS_ARESETN:  in  std_logic;
@@ -129,9 +136,6 @@ begin
 -- REGS_AXI
 	regs: dishsoap_v0_1_REGS_AXI
 		generic map (
-			NETWORK_SIZE       => 3,
-			C_S_AXI_DATA_WIDTH => C_REGS_AXI_DATA_WIDTH,
-			-- original ports:
 			C_S_AXI_DATA_WIDTH => C_REGS_AXI_DATA_WIDTH,
 			C_S_AXI_ADDR_WIDTH => C_REGS_AXI_ADDR_WIDTH
 		)
@@ -141,6 +145,8 @@ begin
 			init_state_lo => init_state_lo,
 			init_state_hi => init_state_hi,
 			num_steps     => num_steps,
+			-- DEBUG
+			dbg_reg0      => dbg_reg0,
 			-- original ports
 			S_AXI_ACLK    => regs_axi_aclk,
 			S_AXI_ARESETN => regs_axi_aresetn,
@@ -179,14 +185,16 @@ begin
 			num_steps      => num_steps,
 			start          => start,
 			ready          => ready,
+			-- DEBUG
+			dbg_reg0       => dbg_reg0,
 			-- original ports:
-			M_AXIS_ACLK    => sim_state_axis_aclk,
-			M_AXIS_ARESETN => sim_state_axis_aresetn,
-			M_AXIS_TVALID  => sim_state_axis_tvalid,
-			M_AXIS_TDATA   => sim_state_axis_tdata,
-			M_AXIS_TSTRB   => sim_state_axis_tstrb,
-			M_AXIS_TLAST   => sim_state_axis_tlast,
-			M_AXIS_TREADY  => sim_state_axis_tready
+			M_AXIS_ACLK    => sim_state_aclk,
+			M_AXIS_ARESETN => sim_state_aresetn,
+			M_AXIS_TVALID  => sim_state_tvalid,
+			M_AXIS_TDATA   => sim_state_tdata,
+			M_AXIS_TSTRB   => sim_state_tstrb,
+			M_AXIS_TLAST   => sim_state_tlast,
+			M_AXIS_TREADY  => sim_state_tready
 		);
 
 	-- only connect relevant portion of init_state

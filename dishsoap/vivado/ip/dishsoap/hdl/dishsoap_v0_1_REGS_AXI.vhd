@@ -21,6 +21,9 @@ entity dishsoap_v0_1_REGS_AXI is
 		init_state_lo: out std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 		init_state_hi: out std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 		num_steps:     out std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+
+		--DEBUGGING
+		dbg_reg0:      in  std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 		--=====================================================--
 		-- NOTE: Do not modify the parameters beyond this line --
 		--=====================================================--
@@ -225,12 +228,12 @@ begin
 	begin
 		if rising_edge(S_AXI_ACLK) then
 			if S_AXI_ARESETN = '0' then
-				slv_reg0  <= (others => '0');
-				slv_reg1  <= (others => '0');
+				--slv_reg0  <= (others => '0');
+				--slv_reg1  <= (others => '0');
 				slv_reg2  <= (others => '0');
 				slv_reg3  <= (others => '0');
 				slv_reg4  <= (others => '0');
-				slv_reg5  <= (others => '0');
+				--slv_reg5  <= (others => '0');
 				slv_reg6  <= (others => '0');
 				slv_reg7  <= (others => '0');
 				slv_reg8  <= (others => '0');
@@ -288,7 +291,7 @@ begin
 								if ( S_AXI_WSTRB(byte_index) = '1' ) then
 									-- Respective byte enables are asserted as per write strobes
 									-- slave registor 5
-									slv_reg5(byte_index*8+7 downto byte_index*8) <= S_AXI_WDATA(byte_index*8+7 downto byte_index*8);
+									--slv_reg5(byte_index*8+7 downto byte_index*8) <= S_AXI_WDATA(byte_index*8+7 downto byte_index*8);
 								end if;
 							end loop;
 						when b"0110" =>
@@ -372,12 +375,12 @@ begin
 								end if;
 							end loop;
 						when others =>
-							slv_reg0  <= slv_reg0;
-							slv_reg1  <= slv_reg1;
+							--slv_reg0  <= slv_reg0;
+							--slv_reg1  <= slv_reg1;
 							slv_reg2  <= slv_reg2;
 							slv_reg3  <= slv_reg3;
 							slv_reg4  <= slv_reg4;
-							slv_reg5  <= slv_reg5;
+							--slv_reg5  <= slv_reg5;
 							slv_reg6  <= slv_reg6;
 							slv_reg7  <= slv_reg7;
 							slv_reg8  <= slv_reg8;
@@ -547,5 +550,6 @@ begin
 	init_state_lo <= slv_reg2;
 	init_state_hi <= slv_reg3;
 	num_steps     <= slv_reg4;
+	slv_reg5      <= dbg_reg0;
 
 end behavior;

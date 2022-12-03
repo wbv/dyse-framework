@@ -221,6 +221,8 @@ apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config { \
 
 # connect dishsoap and axi_dma manually
 connect_bd_intf_net [get_bd_intf_pins dishsoap_0/SIM_STATE_AXIS] [get_bd_intf_pins axi_dma_0/S_AXIS_S2MM]
+# also add DMA interrupt pin
+connect_bd_net [get_bd_pins axi_dma_0/s2mm_introut] [get_bd_pins processing_system7_0/IRQ_F2P]
 
 # but autoapply the clk and reset pins
 apply_bd_automation -rule xilinx.com:bd_rule:clkrst -config { \
@@ -229,7 +231,7 @@ apply_bd_automation -rule xilinx.com:bd_rule:clkrst -config { \
 	Ref_Clk0 {} \
 	Ref_Clk1 {} \
 	Ref_Clk2 {} \
-} [get_bd_pins dishsoap_0/sim_state_axis_aclk]
+} [get_bd_pins dishsoap_0/sim_state_aclk]
 
 # validate and save the final design
 validate_bd_design
