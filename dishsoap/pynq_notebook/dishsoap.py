@@ -1,8 +1,7 @@
-from typing import Sequence
+from typing import Sequence, List
 import collections
 
-from pynq import DefaultIP, Overlay
-from pynq import allocate
+import pynq
 from pynq.buffer import PynqBuffer
 
 import numpy as np
@@ -11,7 +10,7 @@ import numpy as np
 COUNTER_BITS = 16
 COUNTER_MASK = (1 << COUNTER_BITS) - 1
 
-class StreamController(DefaultIP):
+class StreamController(pynq.DefaultIP):
     """
     Object for the count_stream_test IP core, which has a MMIO register
     interface that connects to a streaming DMA device.
@@ -58,7 +57,7 @@ class StreamController(DefaultIP):
     bindto = ['wbv:user:count_stream_test:0.2']
 
 
-class DishsoapIP(DefaultIP):
+class DishsoapIP(pynq.DefaultIP):
     """
     Object for the dishsoap IP core, which has a MMIO AXI register input and a
     streaming AXI-Stream output (intended to connect to a DMA device).
@@ -84,19 +83,33 @@ class DishsoapIP(DefaultIP):
         self.mmio.write(0x8, value)
 
     @property
-    def init_state(self) -> int:
-        lo = self.mmio.read(0x10, length=8)
-        hi = self.mmio.read(0x18, length=8)
-        return (hi << 32) | lo
+    def init_state(self) -> List[int]:
+        state = []
+        for w in range(4):
+            word = self.mmio.read(0x10 + (w*4), length=4)
+            for i in range(32):
+                state.append((word & (1<<i)) >> i)
+
+        return state
 
     @init_state.setter
-    def init_state(self, value: int):
-        if not isinstance(value, int):
-            raise TypeError
-        lo = value         & 0xffffffff
-        hi = (value >> 32) & 0xffffffff
-        self.mmio.write(0x10, lo)
-        self.mmio.write(0x18, hi)
+    def init_state(self, x: Sequence[int]):
+        if not isinstance(x, collections.Sequence):
+            raise TypeError('init_state must be a sequence of states')
+        elif len(x) < 1:
+            raise ValueError('init_state cannot be empty')
+        elif len(x) > 128:
+            raise IndexError(f'init_state too long (found {len(x)} elements)')
+
+        states = [0]*4
+        for bit, state in enumerate(x):
+            # generously interpret things as booleans
+            value = bool(int(state))
+            # write the appropriate bit into the appropriate mmap'd word
+            states[bit // 32] |= int(value) << (bit % 32)
+
+        for i, state in enumerate(states):
+            self.mmio.write(0x10 + (i*4), state)
 
     @property
     def num_steps(self) -> int:
@@ -110,14 +123,12 @@ class DishsoapIP(DefaultIP):
 
     def start(self):
         self.mmio.write(0x8, 1)
-        self.mmio.write(0xc, 1)
-
 
     bindto = ['wbv:user:dishsoap:0.1']
 
 
 
-class TestDmaStreamOverlay(Overlay):
+class TestDmaStreamOverlay(pynq.Overlay):
     def __init__(self, bitfile_name='test_dma_stream.bit'):
         super().__init__(bitfile_name)
         if self.is_loaded():
@@ -192,7 +203,7 @@ class TestDmaStreamOverlay(Overlay):
         self.dma.recvchannel.wait()
         return
 
-class DishsoapOverlay(Overlay):
+class DishsoapOverlay(pynq.Overlay):
     def __init__(self, bitfile_name='dishsoap_vivado.bit'):
         super().__init__(bitfile_name)
         if self.is_loaded():
@@ -226,69 +237,89 @@ class DishsoapOverlay(Overlay):
     @property
     def dishsoap_regs(self):
         info = ''
-        for i in range(16):
-            info += f'0x{i*8:02x}: {self.regs.mmio.read(i*8, length=8)}' + "\n"
+        for i in range(5):
+            info += f'0x{i*8:02x}: {self.regs.mmio.read(i*8, length=8)}\n'
+        info += f'0x{5*8:02x}: {self.regs.mmio.read(5*8, length=8):x}\n'
+        for i in (6,7):
+            info += f'0x{i*8:02x}: {self.regs.mmio.read(i*8, length=8)}\n'
         return info
 
-    def debug_dma(self):
-        if self.dma.recvchannel is not None:
-            print('Recv Channel', self.dma_status)
-            print(self.dma_regs)
+    @staticmethod
+    def print_dbg(dbg):
+        print(f"axis_tready: {(dbg & (1 << 0 )) >> 0 }")
+        print(f"axis_tvalid: {(dbg & (1 << 1 )) >> 1 }")
+        print(f"axis_tlast:  {(dbg & (1 << 2 )) >> 2 }")
+        print(f"stream_ready: {(dbg & (1 << 3 )) >> 3 }")
 
-    def debug_stream(self):
-        print(self.dishsoap_regs)
+        print(f"network[0]: {(dbg & (1 << 8 )) >> 8 }")
+        print(f"network[1]: {(dbg & (1 << 9 )) >> 9 }")
+        print(f"network[2]: {(dbg & (1 << 10)) >> 10}")
 
-    def debug_both(self):
-        self.debug_dma()
-        self.debug_stream()
-
-    def debug_probes(self):
-        dbg = self.regs.mmio.read(0x28, length=8)
-        print(f"stream valid:    {(dbg & (1 << 0 )) >> 0 }")
-        print(f"axis_tvalid:     {(dbg & (1 << 1 )) >> 1 }")
-        print(f"axis_tlast:      {(dbg & (1 << 2 )) >> 2 }")
-        print(f"network[0]:      {(dbg & (1 << 8 )) >> 8 }")
-        print(f"network[1]:      {(dbg & (1 << 9 )) >> 9 }")
-        print(f"network[2]:      {(dbg & (1 << 10)) >> 10}")
         print(f"sim_state_valid: {(dbg & (1 << 16)) >> 16}")
         print(f"sim_state_last:  {(dbg & (1 << 17)) >> 17}")
         print(f"sim_done:        {(dbg & (1 << 18)) >> 18}")
 
-    def run_synch(self, results: PynqBuffer,
-                  init_state: Sequence[int], num_iters: int):
-        if not isinstance(results, PynqBuffer):
-            raise TypeError('\'results\' must be from pynq.allocate()')
+        print(f"state IDLE        {(dbg & (1 << 24)) >> 24}")
+        print(f"state INIT_DELAY  {(dbg & (1 << 25)) >> 25}")
+        print(f"state SEND_STREAM {(dbg & (1 << 26)) >> 26}")
+        print()
 
-        elif not isinstance(init_state, collections.Sequence):
+
+    def debug_dma(self):
+        if self.dma.recvchannel is not None:
+            print('DMA Channel: s2mm')
+            print(self.dma_status)
+            print(self.dma_regs)
+
+    def debug_all_dishsoap_regs(self):
+        print(self.dishsoap_regs)
+
+    def debug_probes(self):
+        self.print_dbg(self.regs.mmio.read(0x28, length=8))
+
+    def debug_both(self):
+        self.debug_dma()
+        self.debug_all_dishsoap_regs()
+        self.debug_probes()
+
+    def run_synch(self, init_state: Sequence[int], num_steps: int):
+        if not isinstance(init_state, collections.Sequence):
             raise TypeError('\'init_state\' must be a sequence of bits')
 
-        elif (results.nbytes % 8) != 0:
-            raise TypeError('\'results\' must be 8-byte aligned')
+        results = pynq.allocate(shape=(num_steps+1,), dtype=np.uint64)
+        print('results:', results)
+        self.debug_both()
 
-#        elif results.nbytes // 8 != num_iters:
-#            raise RuntimeError(f"mismatched iterations ({available_states} !=" +
-#                               f" {num_iters})")
-
-        self.dma.recvchannel.transfer(results)
-
-        state = [0,0,0,0] # 4 32-bit words smh
-        for i in range(len(init_state)):
-            if init_state[i]:
-                state[(i//32)] |= (1 << i)
-
-        self.regs.mmio.write(0x10, state[0])
-        self.regs.mmio.write(0x14, state[1])
-        self.regs.mmio.write(0x18, state[2])
-        self.regs.mmio.write(0x1c, state[3])
-
-
-        #self.regs.init_state_lo = state_lo
-        #self.regs.init_state_hi = state_hi
-        self.regs.num_steps = num_iters
+        self.regs.init_state = init_state
+        self.regs.num_steps = num_steps
         self.regs.start()
 
-        self.dma.recvchannel.wait()
-        return
+        self.dma.recvchannel.transfer(results)
+        try:
+            self.dma.recvchannel.wait()
+        finally:
+            print('results:', results)
+            self.debug_both()
 
+        return [packed_to_list(r,3) for r in results]
+
+
+def packed_to_list(state: np.uint64, size: int = 64) -> List[int]:
+    return [int(bool((int(state) & (1 << i)) >> i)) for i in range(size)]
+
+def list_to_packed(state: Sequence[int]) -> np.uint64:
+    if len(state) > 64:
+        raise ValueError(f'cannot pack >64 elements (got {len(state)}')
+
+    x = np.uint64(0)
+    for i, s in enumerate(state):
+        x |= (int(bool(int(s))) << i)
+    return x
+
+def list_to_array(x: Sequence[int]) -> np.ndarray:
+    return np.ndarray([int(bool(int(i))) for i in x])
+
+def array_to_list(x: np.ndarray) -> Sequence[int]:
+    return [int(v) for v in x.flat]
 
 Overlay = DishsoapOverlay

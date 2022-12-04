@@ -29,6 +29,10 @@ entity dishsoap_ctrl is
 		state_last: out std_logic;  --! '1' when state is the last of the sim
 		sim_done: out std_logic;    --! '1' when the sim completed
 
+		--! DEBUG
+		dbg_reg0: out std_logic_vector(COUNTER_WIDTH-1 downto 0);
+		dbg_reg1: out std_logic_vector(COUNTER_WIDTH-1 downto 0);
+
 		--! asynchronous reset, clock
 		areset, clk: in std_logic
 	);
@@ -55,12 +59,11 @@ architecture behavioral of dishsoap_ctrl is
 			state_next:  in  std_logic_vector(N - 1 downto 0);
 			init_state:  in  std_logic_vector(N - 1 downto 0);
 			rule_sel:    in  std_logic_vector(N - 1 downto 0);
-			force_en:    in  std_logic;
 			force_elems: in  std_logic_vector(N - 1 downto 0);
 			force_vals:  in  std_logic_vector(N - 1 downto 0);
 			clk:         in  std_logic;
 			en:          in  std_logic;
-			arst:        in  std_logic;
+			reset:       in  std_logic;
 			state:       out std_logic_vector(N - 1 downto 0)
 		);
 	end component;
@@ -106,12 +109,11 @@ begin
 			state_next  => net_state_next,
 			init_state  => net_init_state,
 			rule_sel    => (others => '1'), -- synchronous for now
-			force_en    => '0',             -- no forcing function
 			force_elems => (others => '0'), -- no forcing function
 			force_vals  => (others => '0'), -- no forcing function
 			clk         => clk,
 			en          => net_update_en,
-			arst        => nw_reg_reset,
+			reset       => nw_reg_reset,
 			state       => net_state
 		);
 
@@ -120,7 +122,7 @@ begin
 	begin
 		if areset = '1' then
 			-- reset all sim state and disable network update
-			max_steps      <= (others => '0');
+			max_steps      <= (others => '1');
 			net_init_state <= (others => '0');
 			step_counter   <= (others => '0');
 			nw_reg_reset   <= '1';
@@ -172,6 +174,10 @@ begin
 	state_valid <= is_running;
 	state_last  <= last_state;
 	sim_done    <= is_idle;
+
+	--DEBUG
+	dbg_reg0 <= std_logic_vector(max_steps);
+	dbg_reg1 <= std_logic_vector(step_counter);
 
 
 end behavioral;

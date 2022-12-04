@@ -66,6 +66,8 @@ architecture behavior of dishsoap_v0_1 is
 
 	-- DEBUG
 	signal dbg_reg0:      std_logic_vector(C_REGS_AXI_DATA_WIDTH-1 downto 0);
+	signal dbg_reg1:      std_logic_vector(C_REGS_AXI_DATA_WIDTH-1 downto 0);
+	signal dbg_reg2:      std_logic_vector(C_REGS_AXI_DATA_WIDTH-1 downto 0);
 
 	-- component declaration
 	component dishsoap_v0_1_REGS_AXI is
@@ -81,6 +83,8 @@ architecture behavior of dishsoap_v0_1 is
 			num_steps:      out std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 			-- DEBUG
 			dbg_reg0:       in  std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+			dbg_reg1:       in  std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+			dbg_reg2:       in  std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 			-- original ports
 			S_AXI_ACLK:     in  std_logic;
 			S_AXI_ARESETN:  in  std_logic;
@@ -121,6 +125,8 @@ architecture behavior of dishsoap_v0_1 is
 			ready:           out std_logic;
 			-- DEBUG
 			dbg_reg0:        out std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+			dbg_reg1:        out std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+			dbg_reg2:        out std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 			-- original ports:
 			M_AXIS_ACLK:     in  std_logic;
 			M_AXIS_ARESETN:  in  std_logic;
@@ -147,6 +153,8 @@ begin
 			num_steps     => num_steps,
 			-- DEBUG
 			dbg_reg0      => dbg_reg0,
+			dbg_reg1      => dbg_reg1,
+			dbg_reg2      => dbg_reg2,
 			-- original ports
 			S_AXI_ACLK    => regs_axi_aclk,
 			S_AXI_ARESETN => regs_axi_aresetn,
@@ -187,6 +195,8 @@ begin
 			ready          => ready,
 			-- DEBUG
 			dbg_reg0       => dbg_reg0,
+			dbg_reg1       => dbg_reg1,
+			dbg_reg2       => dbg_reg2,
 			-- original ports:
 			M_AXIS_ACLK    => sim_state_aclk,
 			M_AXIS_ARESETN => sim_state_aresetn,
@@ -199,6 +209,6 @@ begin
 
 	-- only connect relevant portion of init_state
 	-- TODO: correctly use both regs once/if network size exceeds register width
-	init_state <= init_state_hi(NETWORK_SIZE-1 downto 0);
+	init_state <= init_state_lo(NETWORK_SIZE-1 downto 0);
 
 end behavior;

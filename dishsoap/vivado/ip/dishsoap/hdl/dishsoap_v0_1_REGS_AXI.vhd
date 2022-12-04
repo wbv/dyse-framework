@@ -24,6 +24,8 @@ entity dishsoap_v0_1_REGS_AXI is
 
 		--DEBUGGING
 		dbg_reg0:      in  std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+		dbg_reg1:      in  std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+		dbg_reg2:      in  std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 		--=====================================================--
 		-- NOTE: Do not modify the parameters beyond this line --
 		--=====================================================--
@@ -234,8 +236,8 @@ begin
 				slv_reg3  <= (others => '0');
 				slv_reg4  <= (others => '0');
 				--slv_reg5  <= (others => '0');
-				slv_reg6  <= (others => '0');
-				slv_reg7  <= (others => '0');
+				--slv_reg6  <= (others => '0');
+				--slv_reg7  <= (others => '0');
 				slv_reg8  <= (others => '0');
 				slv_reg9  <= (others => '0');
 				slv_reg10 <= (others => '0');
@@ -250,14 +252,13 @@ begin
 				if (slv_reg_wren = '1') then
 					case loc_addr is
 						when b"0000" =>
-							for byte_index in 0 to (C_S_AXI_DATA_WIDTH/8-1) loop
-								if ( S_AXI_WSTRB(byte_index) = '1' ) then
-									-- Respective byte enables are asserted as per write strobes
-									-- slave registor 0
-									-- slv_reg0(byte_index*8+7 downto byte_index*8) <= S_AXI_WDATA(byte_index*8+7 downto byte_index*8);
-									-- reg0 is read-only
-								end if;
-							end loop;
+							--for byte_index in 0 to (C_S_AXI_DATA_WIDTH/8-1) loop
+							--	if ( S_AXI_WSTRB(byte_index) = '1' ) then
+							--		-- Respective byte enables are asserted as per write strobes
+							--		-- slave registor 0
+							--		slv_reg0(byte_index*8+7 downto byte_index*8) <= S_AXI_WDATA(byte_index*8+7 downto byte_index*8);
+							--	end if;
+							--end loop;
 						when b"0001" =>
 							if S_AXI_WSTRB(0) = '1' then
 								start_pulse <= S_AXI_WDATA(0);
@@ -287,29 +288,29 @@ begin
 								end if;
 							end loop;
 						when b"0101" =>
-							for byte_index in 0 to (C_S_AXI_DATA_WIDTH/8-1) loop
-								if ( S_AXI_WSTRB(byte_index) = '1' ) then
-									-- Respective byte enables are asserted as per write strobes
-									-- slave registor 5
-									--slv_reg5(byte_index*8+7 downto byte_index*8) <= S_AXI_WDATA(byte_index*8+7 downto byte_index*8);
-								end if;
-							end loop;
+							--for byte_index in 0 to (C_S_AXI_DATA_WIDTH/8-1) loop
+							--	if ( S_AXI_WSTRB(byte_index) = '1' ) then
+							--		-- Respective byte enables are asserted as per write strobes
+							--		-- slave registor 5
+							--		slv_reg5(byte_index*8+7 downto byte_index*8) <= S_AXI_WDATA(byte_index*8+7 downto byte_index*8);
+							--	end if;
+							--end loop;
 						when b"0110" =>
-							for byte_index in 0 to (C_S_AXI_DATA_WIDTH/8-1) loop
-								if ( S_AXI_WSTRB(byte_index) = '1' ) then
-									-- Respective byte enables are asserted as per write strobes
-									-- slave registor 6
-									slv_reg6(byte_index*8+7 downto byte_index*8) <= S_AXI_WDATA(byte_index*8+7 downto byte_index*8);
-								end if;
-							end loop;
+							--for byte_index in 0 to (C_S_AXI_DATA_WIDTH/8-1) loop
+							--	if ( S_AXI_WSTRB(byte_index) = '1' ) then
+							--		-- Respective byte enables are asserted as per write strobes
+							--		-- slave registor 6
+							--		slv_reg6(byte_index*8+7 downto byte_index*8) <= S_AXI_WDATA(byte_index*8+7 downto byte_index*8);
+							--	end if;
+							--end loop;
 						when b"0111" =>
-							for byte_index in 0 to (C_S_AXI_DATA_WIDTH/8-1) loop
-								if ( S_AXI_WSTRB(byte_index) = '1' ) then
-									-- Respective byte enables are asserted as per write strobes
-									-- slave registor 7
-									slv_reg7(byte_index*8+7 downto byte_index*8) <= S_AXI_WDATA(byte_index*8+7 downto byte_index*8);
-								end if;
-							end loop;
+							--for byte_index in 0 to (C_S_AXI_DATA_WIDTH/8-1) loop
+							--	if ( S_AXI_WSTRB(byte_index) = '1' ) then
+							--		-- Respective byte enables are asserted as per write strobes
+							--		-- slave registor 7
+							--		slv_reg7(byte_index*8+7 downto byte_index*8) <= S_AXI_WDATA(byte_index*8+7 downto byte_index*8);
+							--	end if;
+							--end loop;
 						when b"1000" =>
 							for byte_index in 0 to (C_S_AXI_DATA_WIDTH/8-1) loop
 								if ( S_AXI_WSTRB(byte_index) = '1' ) then
@@ -381,8 +382,8 @@ begin
 							slv_reg3  <= slv_reg3;
 							slv_reg4  <= slv_reg4;
 							--slv_reg5  <= slv_reg5;
-							slv_reg6  <= slv_reg6;
-							slv_reg7  <= slv_reg7;
+							--slv_reg6  <= slv_reg6;
+							--slv_reg7  <= slv_reg7;
 							slv_reg8  <= slv_reg8;
 							slv_reg9  <= slv_reg9;
 							slv_reg10 <= slv_reg10;
@@ -551,5 +552,7 @@ begin
 	init_state_hi <= slv_reg3;
 	num_steps     <= slv_reg4;
 	slv_reg5      <= dbg_reg0;
+	slv_reg6      <= dbg_reg1;
+	slv_reg7      <= dbg_reg2;
 
 end behavior;

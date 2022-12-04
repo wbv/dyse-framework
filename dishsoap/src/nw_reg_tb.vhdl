@@ -19,10 +19,9 @@ architecture test of nw_reg_tb is
 			rule_sel:    in  std_logic_vector(N - 1 downto 0);
 			force_elems: in  std_logic_vector(N - 1 downto 0);
 			force_vals:  in  std_logic_vector(N - 1 downto 0);
-			force_en:    in  std_logic;
 			clk:         in  std_logic;
 			en:          in  std_logic;
-			arst:        in  std_logic;
+			reset:       in  std_logic;
 			state:       out std_logic_vector(N - 1 downto 0)
 		);
 	end component;
@@ -35,9 +34,8 @@ architecture test of nw_reg_tb is
 	signal rule_sel:    std_logic_vector(N - 1 downto 0);
 	signal force_elems: std_logic_vector(N - 1 downto 0);
 	signal force_vals:  std_logic_vector(N - 1 downto 0);
-	signal force_en:    std_logic;
 	signal en:          std_logic;
-	signal arst:        std_logic;
+	signal reset:       std_logic;
 	-- clock starts low to move rising edge off CLK_PERIOD intervals
 	signal clk: std_logic := '0';
 
@@ -58,10 +56,9 @@ begin
 			rule_sel     => rule_sel,
 			force_elems  => force_elems,
 			force_vals   => force_vals,
-			force_en     => force_en,
 			clk          => clk,
 			en           => en,
-			arst         => arst,
+			reset        => reset,
 			state        => state
 		);
 
@@ -86,15 +83,14 @@ begin
 	-- initial states
 	state_next <= "1010";
 	en <= '0';
-	arst <= '0';
+	reset <= '0';
 	init_state <= (others => '0');
 	rule_sel <= (others => '1');
-	force_en <= '0';
 	force_elems <= (others => 'Z');
 	force_vals <= (others => 'Z');
 
 	wait for CLK_PERIOD;
-	arst <= '1', '0' after CLK_PERIOD;
+	reset <= '1', '0' after CLK_PERIOD;
 	wait for CLK_PERIOD;
 
 	assert state = "0000"
@@ -116,7 +112,7 @@ begin
 		report "EN did not update state";
 
 
-	arst <= '1', '0' after CLK_PERIOD;
+	reset <= '1', '0' after CLK_PERIOD;
 	wait for CLK_PERIOD;
 
 	assert state = "0000"
@@ -124,7 +120,7 @@ begin
 
 
 	en <= '0', '1' after CLK_PERIOD;
-	arst <= '1', '0' after CLK_PERIOD;
+	reset <= '1', '0' after CLK_PERIOD;
 	wait for CLK_PERIOD;
 
 	assert state = "0000"
@@ -133,10 +129,10 @@ begin
 
 	-- new test: reset to custom 'init'
 	init_state <= "0111";
-	arst <= '1', '0' after CLK_PERIOD;
+	reset <= '1', '0' after CLK_PERIOD;
 	wait for CLK_PERIOD;
 
-	assert state = "0111";
+	assert state = "0111"
 		report "state not updated to nonzero init";
 
 
