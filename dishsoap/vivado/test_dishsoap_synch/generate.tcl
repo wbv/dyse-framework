@@ -7,6 +7,10 @@
 source config.tcl
 
 
+#=============================================#
+# (pre-generated checks that Vivado performs) #
+#=============================================#
+
 # set script_folder to current working directory
 namespace eval _tcl {
 proc get_script_folder {} {
@@ -103,9 +107,6 @@ if { $nRet != 0 } {
 }
 
 set bCheckIPsPassed 1
-##################################################################
-# CHECK IPs
-##################################################################
 set bCheckIPs 1
 if { $bCheckIPs == 1 } {
    set list_check_ips "\
@@ -136,9 +137,12 @@ if { $bCheckIPsPassed != 1 } {
   return 3
 }
 
-#========#
-# Design #
-#========#
+
+
+
+#===================================#
+# Specify the actual project design #
+#===================================#
 
 # project properties
 set_property target_language VHDL [current_project]
@@ -233,9 +237,20 @@ apply_bd_automation -rule xilinx.com:bd_rule:clkrst -config { \
 	Ref_Clk2 {} \
 } [get_bd_pins dishsoap_0/sim_state_aclk]
 
+
+
+#=============================#
+# Save generated board design #
+#=============================#
+
 # validate and save the final design
 validate_bd_design
 save_bd_design
+
+
+#=====================================#
+# Configure/generate other components #
+#=====================================#
 
 # autogenerate and add VHDL wrapper for board design as top-level module
 make_wrapper -files [get_files ./${overlay_name}/${overlay_name}.srcs/sources_1/bd/${design_name}/${design_name}.bd] -top
@@ -245,5 +260,11 @@ set_property top ${design_name}_wrapper [current_fileset]
 # import constraints file
 import_files -fileset constrs_1 -norecurse "../constraintfiles/pynq-z2-v1.0.xdc"
 update_compile_order -fileset sources_1
+
+# disable checkpointing/out-of-context IP builds
+set_property synth_checkpoint_mode None [get_files ./${overlay_name}/${overlay_name}.srcs/sources_1/bd/${design_name}/${design_name}.bd]
+# generate out-of-context IP builds
+generate_target all [get_files ./${overlay_name}/${overlay_name}.srcs/sources_1/bd/${design_name}/${design_name}.bd]
+
 
 close_project
