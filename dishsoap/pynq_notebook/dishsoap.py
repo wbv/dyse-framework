@@ -63,18 +63,18 @@ class DishsoapIP(pynq.DefaultIP):
     streaming AXI-Stream output (intended to connect to a DMA device).
     """
 
-    REG_SIZE = 4 # bytes per register
+    REG_SIZE = 8 # bytes per register
 
     def __init__(self, description):
         super().__init__(description)
 
     @property
     def status(self) -> int:
-        return self.mmio.read(0x0, length=8)
+        return self.mmio.read(0x0, length=self.REG_SIZE)
 
     @property
     def ctrl(self) -> int:
-        return self.mmio.read(0x8, length=8)
+        return self.mmio.read(0x8, length=self.REG_SIZE)
 
     @ctrl.setter
     def ctrl(self, value: int):
@@ -93,27 +93,37 @@ class DishsoapIP(pynq.DefaultIP):
         return state
 
     @init_state.setter
-    def init_state(self, x: Sequence[int]):
-        if not isinstance(x, collections.Sequence):
+    def init_state(self, x):
+        # set init state from a packed np.uint64
+        if isinstance(x, np.uint64):
+            x_bin = x.tobytes()
+            lo, hi = x_bin[0:4], x_bin[4:8]
+            self.mmio.write(0x10, lo)
+            self.mmio.write(0x14, hi)
+
+        # set init state from a list of states (easy)
+        elif isinstance(x, collections.Sequence):
+            if len(x) < 1:
+                raise ValueError('init_state cannot be empty')
+            elif len(x) > 64:
+                raise IndexError(f'init_state too long (found {len(x)} elements)')
+
+            states = [0]*2
+            for bit, state in enumerate(x):
+                # generously interpret things as booleans
+                value = bool(int(state))
+                # write the appropriate bit into the appropriate mmap'd word
+                states[bit // 32] |= int(value) << (bit % 32)
+
+            for i, state in enumerate(states):
+                self.mmio.write(0x10 + (i*4), state)
+        else:
             raise TypeError('init_state must be a sequence of states')
-        elif len(x) < 1:
-            raise ValueError('init_state cannot be empty')
-        elif len(x) > 128:
-            raise IndexError(f'init_state too long (found {len(x)} elements)')
 
-        states = [0]*4
-        for bit, state in enumerate(x):
-            # generously interpret things as booleans
-            value = bool(int(state))
-            # write the appropriate bit into the appropriate mmap'd word
-            states[bit // 32] |= int(value) << (bit % 32)
-
-        for i, state in enumerate(states):
-            self.mmio.write(0x10 + (i*4), state)
 
     @property
     def num_steps(self) -> int:
-        return self.mmio.read(0x20, length=8)
+        return self.mmio.read(0x20, length=self.REG_SIZE)
 
     @num_steps.setter
     def num_steps(self, value: int):
@@ -203,12 +213,19 @@ class TestDmaStreamOverlay(pynq.Overlay):
         self.dma.recvchannel.wait()
         return
 
+
 class DishsoapOverlay(pynq.Overlay):
+
     def __init__(self, bitfile_name='dishsoap_vivado.bit'):
         super().__init__(bitfile_name)
         if self.is_loaded():
             self.dma = self.axi_dma_0
             self.regs = self.dishsoap_0
+
+    @property
+    def net_size(self):
+        return 3 #TODO: make dynamic ;)
+
 
     @property
     def dma_status(self):
@@ -237,28 +254,27 @@ class DishsoapOverlay(pynq.Overlay):
     @property
     def dishsoap_regs(self):
         info = ''
-        for i in range(5):
-            info += f'0x{i*8:02x}: {self.regs.mmio.read(i*8, length=8)}\n'
-        info += f'0x{5*8:02x}: {self.regs.mmio.read(5*8, length=8):x}\n'
-        for i in (6,7):
-            info += f'0x{i*8:02x}: {self.regs.mmio.read(i*8, length=8)}\n'
+        info += f'0x00 status:        {self.regs.mmio.read(0x00, length=self.REG_SIZE):b}\n'
+        info += f'0x08 control:       {self.regs.mmio.read(0x08, length=self.REG_SIZE):b}\n'
+        info += f'0x10 init_state:    {self.regs.mmio.read(0x10, length=self.REG_SIZE):03b}\n'
+        info += f'0x20 num_steps:     {self.regs.mmio.read(0x20, length=self.REG_SIZE):d}\n'
+        info += f'0x28 dbg 0:         {self.regs.mmio.read(0x28, length=self.REG_SIZE):064b}\n'
+        info += f'0x30 sim_state:     {self.regs.mmio.read(0x30, length=self.REG_SIZE):03b}\n'
+        info += f'0x38 max_steps:     {self.regs.mmio.read(0x38, length=self.REG_SIZE):d}\n'
+        info += f'0x40 step_counter:  {self.regs.mmio.read(0x40, length=self.REG_SIZE):d}\n'
         return info
 
     @staticmethod
     def print_dbg(dbg):
-        print(f"axis_tready: {(dbg & (1 << 0 )) >> 0 }")
-        print(f"axis_tvalid: {(dbg & (1 << 1 )) >> 1 }")
-        print(f"axis_tlast:  {(dbg & (1 << 2 )) >> 2 }")
+        print(f"axis_tready:  {(dbg & (1 << 0 )) >> 0 }")
+        print(f"axis_tvalid:  {(dbg & (1 << 1 )) >> 1 }")
+        print(f"axis_tlast:   {(dbg & (1 << 2 )) >> 2 }")
         print(f"stream_ready: {(dbg & (1 << 3 )) >> 3 }")
-
-        print(f"network[0]: {(dbg & (1 << 8 )) >> 8 }")
-        print(f"network[1]: {(dbg & (1 << 9 )) >> 9 }")
-        print(f"network[2]: {(dbg & (1 << 10)) >> 10}")
-
-        print(f"sim_state_valid: {(dbg & (1 << 16)) >> 16}")
-        print(f"sim_state_last:  {(dbg & (1 << 17)) >> 17}")
-        print(f"sim_done:        {(dbg & (1 << 18)) >> 18}")
-
+        print()
+        print(f"sim_state_valid: {(dbg & (1 << 8 )) >>  8}")
+        print(f"sim_state_last:  {(dbg & (1 << 9 )) >>  9}")
+        print(f"sim_done:        {(dbg & (1 << 10)) >> 10}")
+        print()
         print(f"state IDLE        {(dbg & (1 << 24)) >> 24}")
         print(f"state INIT_DELAY  {(dbg & (1 << 25)) >> 25}")
         print(f"state SEND_STREAM {(dbg & (1 << 26)) >> 26}")
@@ -275,33 +291,51 @@ class DishsoapOverlay(pynq.Overlay):
         print(self.dishsoap_regs)
 
     def debug_probes(self):
-        self.print_dbg(self.regs.mmio.read(0x28, length=8))
+        self.print_dbg(self.regs.mmio.read(0x28, length=self.REG_SIZE))
 
     def debug_both(self):
         self.debug_dma()
         self.debug_all_dishsoap_regs()
         self.debug_probes()
 
-    def run_synch(self, init_state: Sequence[int], num_steps: int):
-        if not isinstance(init_state, collections.Sequence):
-            raise TypeError('\'init_state\' must be a sequence of bits')
+    def unpack(self, value) -> np.ndarray:
+        if isinstance(value, np.uint64):
+            return state_unpack(value, self.net_size)
+        elif isinstance(value, np.ndarray):
+            return np.array([state_unpack(v, self.net_size) for v in value])
 
-        results = pynq.allocate(shape=(num_steps+1,), dtype=np.uint64)
-        print('results:', results)
-        self.debug_both()
+    def run_synch_inplace(self, init_state, results: PynqBuffer):
+        # figure out how many steps we take based on shape of results
+        num_steps = results.shape[0] - 1
 
+        # tell the DMA expect & transfer num_steps+1 states
+        self.dma.recvchannel.transfer(results)
+
+        # then configure & tell the sim to run
         self.regs.init_state = init_state
         self.regs.num_steps = num_steps
         self.regs.start()
 
-        self.dma.recvchannel.transfer(results)
-        try:
-            self.dma.recvchannel.wait()
-        finally:
-            print('results:', results)
-            self.debug_both()
+        # and block until the sim to finishes and we have results to return
+        self.dma.recvchannel.wait()
 
-        return [packed_to_list(r,3) for r in results]
+        return
+
+    def run_synch(self, init_state: Sequence[int], num_steps: int):
+
+        if results is None:
+            results = pynq.allocate(shape=(num_steps+1,), dtype=np.uint64)
+
+        self.run_synch_inplace(init_state, results)
+
+        return [packed_to_list(r,self.net_size) for r in results]
+
+    def run_synch_np(self, init_state: np.uint64, num_steps: int):
+
+        results = pynq.allocate(shape=(num_steps+1,), dtype=np.uint64)
+        self.run_synch_inplace(init_state, results)
+        return results
+
 
 
 def packed_to_list(state: np.uint64, size: int = 64) -> List[int]:
@@ -313,7 +347,7 @@ def list_to_packed(state: Sequence[int]) -> np.uint64:
 
     x = np.uint64(0)
     for i, s in enumerate(state):
-        x |= (int(bool(int(s))) << i)
+        x |= np.uint64(int(bool(int(s))) << i)
     return x
 
 def list_to_array(x: Sequence[int]) -> np.ndarray:
@@ -322,4 +356,14 @@ def list_to_array(x: Sequence[int]) -> np.ndarray:
 def array_to_list(x: np.ndarray) -> Sequence[int]:
     return [int(v) for v in x.flat]
 
+def state_unpack(x: np.uint64, bits: int):
+    return np.unpackbits(x.flatten().view(np.uint8), count=bits, bitorder='little')
+
+
+## TESTS ##
+
+
+
+
+Dish = DishsoapOverlay
 Overlay = DishsoapOverlay

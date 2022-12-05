@@ -57,17 +57,16 @@ end dishsoap_v0_1;
 
 architecture behavior of dishsoap_v0_1 is
 	-- intermediate signals
-	signal init_state:    std_logic_vector(NETWORK_SIZE-1 downto 0);
-	signal init_state_lo: std_logic_vector(C_REGS_AXI_DATA_WIDTH-1 downto 0);
-	signal init_state_hi: std_logic_vector(C_REGS_AXI_DATA_WIDTH-1 downto 0);
-	signal num_steps:     std_logic_vector(C_REGS_AXI_DATA_WIDTH-1 downto 0);
-	signal start:         std_logic;
-	signal ready:         std_logic;
+	signal init_state:     std_logic_vector(C_REGS_AXI_DATA_WIDTH-1 downto 0);
+	signal num_steps:      std_logic_vector(C_REGS_AXI_DATA_WIDTH-1 downto 0);
+	signal start:          std_logic;
+	signal ready:          std_logic;
 
 	-- DEBUG
 	signal dbg_reg0:      std_logic_vector(C_REGS_AXI_DATA_WIDTH-1 downto 0);
 	signal dbg_reg1:      std_logic_vector(C_REGS_AXI_DATA_WIDTH-1 downto 0);
 	signal dbg_reg2:      std_logic_vector(C_REGS_AXI_DATA_WIDTH-1 downto 0);
+	signal dbg_reg3:      std_logic_vector(C_REGS_AXI_DATA_WIDTH-1 downto 0);
 
 	-- component declaration
 	component dishsoap_v0_1_REGS_AXI is
@@ -78,13 +77,13 @@ architecture behavior of dishsoap_v0_1 is
 		port (
 			ready:          in  std_logic;
 			start:          out std_logic;
-			init_state_lo:  out std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
-			init_state_hi:  out std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+			init_state:     out std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 			num_steps:      out std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 			-- DEBUG
 			dbg_reg0:       in  std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 			dbg_reg1:       in  std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 			dbg_reg2:       in  std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+			dbg_reg3:       in  std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 			-- original ports
 			S_AXI_ACLK:     in  std_logic;
 			S_AXI_ARESETN:  in  std_logic;
@@ -127,6 +126,7 @@ architecture behavior of dishsoap_v0_1 is
 			dbg_reg0:        out std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 			dbg_reg1:        out std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 			dbg_reg2:        out std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+			dbg_reg3:        out std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 			-- original ports:
 			M_AXIS_ACLK:     in  std_logic;
 			M_AXIS_ARESETN:  in  std_logic;
@@ -148,13 +148,13 @@ begin
 		port map (
 			ready         => ready,
 			start         => start,
-			init_state_lo => init_state_lo,
-			init_state_hi => init_state_hi,
 			num_steps     => num_steps,
+			init_state    => init_state,
 			-- DEBUG
 			dbg_reg0      => dbg_reg0,
 			dbg_reg1      => dbg_reg1,
 			dbg_reg2      => dbg_reg2,
+			dbg_reg3      => dbg_reg3,
 			-- original ports
 			S_AXI_ACLK    => regs_axi_aclk,
 			S_AXI_ARESETN => regs_axi_aresetn,
@@ -189,7 +189,7 @@ begin
 			C_M_START_COUNT      => C_SIM_STATE_AXIS_START_COUNT
 		)
 		port map (
-			init_state     => init_state,
+			init_state     => init_state(NETWORK_SIZE-1 downto 0),
 			num_steps      => num_steps,
 			start          => start,
 			ready          => ready,
@@ -197,6 +197,7 @@ begin
 			dbg_reg0       => dbg_reg0,
 			dbg_reg1       => dbg_reg1,
 			dbg_reg2       => dbg_reg2,
+			dbg_reg3       => dbg_reg3,
 			-- original ports:
 			M_AXIS_ACLK    => sim_state_aclk,
 			M_AXIS_ARESETN => sim_state_aresetn,
@@ -206,9 +207,5 @@ begin
 			M_AXIS_TLAST   => sim_state_tlast,
 			M_AXIS_TREADY  => sim_state_tready
 		);
-
-	-- only connect relevant portion of init_state
-	-- TODO: correctly use both regs once/if network size exceeds register width
-	init_state <= init_state_lo(NETWORK_SIZE-1 downto 0);
 
 end behavior;

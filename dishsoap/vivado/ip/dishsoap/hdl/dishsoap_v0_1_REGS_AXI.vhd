@@ -18,14 +18,14 @@ entity dishsoap_v0_1_REGS_AXI is
 		-- Users to add ports here
 		ready:         in  std_logic;
 		start:         out std_logic;
-		init_state_lo: out std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
-		init_state_hi: out std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+		init_state:    out std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 		num_steps:     out std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 
 		--DEBUGGING
 		dbg_reg0:      in  std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 		dbg_reg1:      in  std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 		dbg_reg2:      in  std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+		dbg_reg3:      in  std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 		--=====================================================--
 		-- NOTE: Do not modify the parameters beyond this line --
 		--=====================================================--
@@ -238,7 +238,7 @@ begin
 				--slv_reg5  <= (others => '0');
 				--slv_reg6  <= (others => '0');
 				--slv_reg7  <= (others => '0');
-				slv_reg8  <= (others => '0');
+				--slv_reg8  <= (others => '0');
 				slv_reg9  <= (others => '0');
 				slv_reg10 <= (others => '0');
 				slv_reg11 <= (others => '0');
@@ -312,13 +312,13 @@ begin
 							--	end if;
 							--end loop;
 						when b"1000" =>
-							for byte_index in 0 to (C_S_AXI_DATA_WIDTH/8-1) loop
-								if ( S_AXI_WSTRB(byte_index) = '1' ) then
-									-- Respective byte enables are asserted as per write strobes
-									-- slave registor 8
-									slv_reg8(byte_index*8+7 downto byte_index*8) <= S_AXI_WDATA(byte_index*8+7 downto byte_index*8);
-								end if;
-							end loop;
+							--for byte_index in 0 to (C_S_AXI_DATA_WIDTH/8-1) loop
+							--	if ( S_AXI_WSTRB(byte_index) = '1' ) then
+							--		-- Respective byte enables are asserted as per write strobes
+							--		-- slave registor 8
+							--		slv_reg8(byte_index*8+7 downto byte_index*8) <= S_AXI_WDATA(byte_index*8+7 downto byte_index*8);
+							--	end if;
+							--end loop;
 						when b"1001" =>
 							for byte_index in 0 to (C_S_AXI_DATA_WIDTH/8-1) loop
 								if ( S_AXI_WSTRB(byte_index) = '1' ) then
@@ -384,7 +384,7 @@ begin
 							--slv_reg5  <= slv_reg5;
 							--slv_reg6  <= slv_reg6;
 							--slv_reg7  <= slv_reg7;
-							slv_reg8  <= slv_reg8;
+							--slv_reg8  <= slv_reg8;
 							slv_reg9  <= slv_reg9;
 							slv_reg10 <= slv_reg10;
 							slv_reg11 <= slv_reg11;
@@ -548,11 +548,11 @@ begin
 	slv_reg1 <= (0 => start_pulse, others => '0');
 	start    <= start_pulse;
 
-	init_state_lo <= slv_reg2;
-	init_state_hi <= slv_reg3;
+	init_state    <= slv_reg2;
 	num_steps     <= slv_reg4;
 	slv_reg5      <= dbg_reg0;
 	slv_reg6      <= dbg_reg1;
 	slv_reg7      <= dbg_reg2;
+	slv_reg8      <= dbg_reg3;
 
 end behavior;

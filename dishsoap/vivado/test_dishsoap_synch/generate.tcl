@@ -151,10 +151,10 @@ set_property target_language VHDL [current_project]
 
 # AXI DMA block
 create_bd_cell -type ip -vlnv xilinx.com:ip:axi_dma:7.1 axi_dma_0
-set_property -dict [list \
-	CONFIG.c_m_axi_s2mm_data_width.VALUE_SRC USER \
-	CONFIG.c_s_axis_s2mm_tdata_width.VALUE_SRC USER\
-] [get_bd_cells axi_dma_0]
+#set_property -dict [list \
+#	CONFIG.c_m_axi_s2mm_data_width.VALUE_SRC USER \
+#	CONFIG.c_s_axis_s2mm_tdata_width.VALUE_SRC USER \
+#] [get_bd_cells axi_dma_0]
 set_property -dict [list \
 	CONFIG.c_include_sg {0} \
 	CONFIG.c_sg_length_width {26} \
@@ -163,7 +163,7 @@ set_property -dict [list \
 	CONFIG.c_m_axi_s2mm_data_width {64} \
 	CONFIG.c_s_axis_s2mm_tdata_width {64} \
 	CONFIG.c_s2mm_burst_size {256} \
-	CONFIG.c_addr_width {64}\
+	CONFIG.c_addr_width {32} \
 ] [get_bd_cells axi_dma_0]
 
 # Zynq PS7 block

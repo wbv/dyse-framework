@@ -14,8 +14,8 @@ entity dishsoap_ctrl is
 	);
 	port (
 		--! simulation inputs/config
-		init_state: in std_logic_vector(N - 1 downto 0);
-		num_steps:  in std_logic_vector(COUNTER_WIDTH - 1 downto 0);
+		init_state: in std_logic_vector(N-1 downto 0);
+		num_steps:  in std_logic_vector(COUNTER_WIDTH-1 downto 0);
 
 		--! starts a sim run with configuration above
 		go: in std_logic;
@@ -23,15 +23,15 @@ entity dishsoap_ctrl is
 		stream_ready: in std_logic;
 
 		--! current state of the network
-		state: out std_logic_vector(N - 1 downto 0);
+		state: out std_logic_vector(N-1 downto 0);
 		--! state flags
 		state_valid: out std_logic; --! '1' when state should be saved
 		state_last: out std_logic;  --! '1' when state is the last of the sim
 		sim_done: out std_logic;    --! '1' when the sim completed
 
 		--! DEBUG
-		dbg_reg0: out std_logic_vector(COUNTER_WIDTH-1 downto 0);
-		dbg_reg1: out std_logic_vector(COUNTER_WIDTH-1 downto 0);
+		dbg_reg2: out std_logic_vector(COUNTER_WIDTH-1 downto 0);
+		dbg_reg3: out std_logic_vector(COUNTER_WIDTH-1 downto 0);
 
 		--! asynchronous reset, clock
 		areset, clk: in std_logic
@@ -56,15 +56,15 @@ architecture behavioral of dishsoap_ctrl is
 			N: natural
 		);
 		port (
-			state_next:  in  std_logic_vector(N - 1 downto 0);
-			init_state:  in  std_logic_vector(N - 1 downto 0);
-			rule_sel:    in  std_logic_vector(N - 1 downto 0);
-			force_elems: in  std_logic_vector(N - 1 downto 0);
-			force_vals:  in  std_logic_vector(N - 1 downto 0);
+			state_next:  in  std_logic_vector(N-1 downto 0);
+			init_state:  in  std_logic_vector(N-1 downto 0);
+			rule_sel:    in  std_logic_vector(N-1 downto 0);
+			force_elems: in  std_logic_vector(N-1 downto 0);
+			force_vals:  in  std_logic_vector(N-1 downto 0);
 			clk:         in  std_logic;
 			en:          in  std_logic;
 			reset:       in  std_logic;
-			state:       out std_logic_vector(N - 1 downto 0)
+			state:       out std_logic_vector(N-1 downto 0)
 		);
 	end component;
 	for reg: nw_reg use entity work.nw_reg;
@@ -77,13 +77,12 @@ architecture behavioral of dishsoap_ctrl is
 	signal is_idle:    std_logic;
 	signal is_running: std_logic;
 
-	signal step_counter: unsigned(COUNTER_WIDTH - 1 downto 0);
-	signal max_steps:    unsigned(COUNTER_WIDTH - 1 downto 0);
+	signal step_counter: unsigned(COUNTER_WIDTH-1 downto 0);
+	signal max_steps:    unsigned(COUNTER_WIDTH-1 downto 0);
 	signal last_state:   std_logic;
 
-	signal net_state:      std_logic_vector(N - 1 downto 0);
-	signal net_state_next: std_logic_vector(N - 1 downto 0);
-	signal net_init_state: std_logic_vector(N - 1 downto 0);
+	signal net_state:      std_logic_vector(N-1 downto 0);
+	signal net_state_next: std_logic_vector(N-1 downto 0);
 
 	signal net_update_en: std_logic;
 	signal nw_reg_reset: std_logic;
@@ -107,7 +106,7 @@ begin
 		)
 		port map (
 			state_next  => net_state_next,
-			init_state  => net_init_state,
+			init_state  => init_state,
 			rule_sel    => (others => '1'), -- synchronous for now
 			force_elems => (others => '0'), -- no forcing function
 			force_vals  => (others => '0'), -- no forcing function
@@ -118,55 +117,54 @@ begin
 		);
 
 
-	clk_process: process(clk, areset)
+	clk_process:
+	process(clk)
 	begin
-		if areset = '1' then
-			-- reset all sim state and disable network update
-			max_steps      <= (others => '1');
-			net_init_state <= (others => '0');
-			step_counter   <= (others => '0');
-			nw_reg_reset   <= '1';
-		elsif rising_edge(clk) then
-			case (exec_state) is
-				when IDLE =>
-					-- IDLE unless 'go' is asserted
-					if go = '1' then
-						-- latch in all configuration
-						max_steps      <= unsigned(num_steps);
-						net_init_state <= init_state;
-						-- initialize simulation variables/devices
-						step_counter   <= to_unsigned(0, step_counter'length);
-						-- reset network state to init_state (input)
-						nw_reg_reset   <= '1';
-
-						exec_state <= RUNNING;
-					end if;
-
-				when RUNNING =>
-					nw_reg_reset <= '0';
-					-- only step the network if the current state has been saved
-					if stream_ready = '1' then
-						step_counter  <= step_counter + 1;
-						-- after last state, transition to idle
-						if last_state = '1' then
-							exec_state <= IDLE;
+		if rising_edge(clk) then
+			if areset = '1' then
+				-- reset all sim state and disable network update
+				max_steps      <= (others => '1');
+				step_counter   <= (others => '0');
+				exec_state     <= IDLE;
+			else
+				case (exec_state) is
+					when IDLE =>
+						-- IDLE unless 'go' is asserted
+						if go = '1' then
+							-- latch in simulation variables/devices
+							step_counter   <= to_unsigned(0, step_counter'length);
+							max_steps      <= unsigned(num_steps);
+							-- and enter run state
+							exec_state <= RUNNING;
 						end if;
-					end if;
 
-			end case;
+					when RUNNING =>
+						-- only step the simulation forward if state has been saved
+						if stream_ready = '1' then
+							step_counter <= step_counter + 1;
+							-- after last state, transition to idle
+							if last_state = '1' then
+								exec_state <= IDLE;
+							end if;
+						end if;
+
+				end case;
+			end if;
 		end if;
 	end process;
 
-	-- network state is always visible
-	state <= net_state;
-
-	-- last state of current sim run is being sent
-	last_state <= '1' when step_counter = max_steps else '0';
 	-- exec_state indicator signals
 	is_idle    <= '1' when exec_state = IDLE else '0';
 	is_running <= '1' when exec_state = RUNNING else '0';
 
-	-- always update the network state if the stream recipient is ready for it
+	-- network state is always visible
+	state <= net_state;
+	-- and is being latched in while not executing
+	nw_reg_reset <= '1' when exec_state = IDLE else '0';
+	-- last state of current sim run is being sent
+	last_state <= '1' when step_counter = max_steps else '0';
+
+	-- allow network state to update if the stream recipient is ready for it
 	-- and we're still running a sim
 	net_update_en <= stream_ready and not is_idle;
 
@@ -176,8 +174,8 @@ begin
 	sim_done    <= is_idle;
 
 	--DEBUG
-	dbg_reg0 <= std_logic_vector(max_steps);
-	dbg_reg1 <= std_logic_vector(step_counter);
+	dbg_reg2 <= std_logic_vector(max_steps);
+	dbg_reg3 <= std_logic_vector(step_counter);
 
 
 end behavioral;
