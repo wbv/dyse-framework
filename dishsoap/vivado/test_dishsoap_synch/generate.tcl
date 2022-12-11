@@ -177,9 +177,12 @@ set_property -dict [list \
 ] [get_bd_cells processing_system7_0]
 
 # DiSHSOAP block
+# NOTE: we want to change axi_addr_width when we expand register space
+# NOTE: we probably want network_size to be a function of chosen network
 create_bd_cell -type ip -vlnv wbv:user:dishsoap:0.1 dishsoap_0
 set_property -dict [list \
 	CONFIG.C_REGS_AXI_ADDR_WIDTH {8} \
+	CONFIG.NETWORK_SIZE {61} \
 ] [get_bd_cells dishsoap_0]
 
 

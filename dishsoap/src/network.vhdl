@@ -7,7 +7,7 @@ use ieee.std_logic_1164.all;
 
 entity network is
 	generic (
-		NETWORK_SIZE: positive := 5
+		NETWORK_SIZE: positive := 6
 	);
 	port (
 		-- all elements have single input and output
@@ -28,4 +28,5 @@ begin
 	net_next(3) <= net(2);
 	--! Xprotein = Xrna
 	net_next(4) <= net(3);
+	net_next(5) <= net(4);
 end var1;
