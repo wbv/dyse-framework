@@ -7,9 +7,9 @@ entity dishsoap_v0_1_SIM_STATE_AXIS is
 		--==============================--
 		-- Users to add parameters here --
 		--==============================--
-		NETWORK_SIZE: natural := 3;
+		NETWORK_SIZE: natural;
 		-- also carry register widths in here
-		C_S_AXI_DATA_WIDTH: integer := 64;
+		C_S_AXI_DATA_WIDTH: integer;
 		--=====================================================--
 		-- NOTE: Do not modify the parameters beyond this line --
 		--=====================================================--
@@ -87,16 +87,16 @@ architecture implementation of dishsoap_v0_1_SIM_STATE_AXIS is
 	-- the dishsoap controller
 	component dishsoap_ctrl is
 		generic (
-			N: positive := 3;
-			COUNTER_WIDTH: positive := 16
+			NETWORK_SIZE:  positive;
+			COUNTER_WIDTH: positive
 
 		);
 		port (
-			init_state:   in  std_logic_vector(N - 1 downto 0);
+			init_state:   in  std_logic_vector(NETWORK_SIZE - 1 downto 0);
 			num_steps:    in  std_logic_vector(COUNTER_WIDTH - 1 downto 0);
 			go:           in  std_logic;
 			stream_ready: in  std_logic;
-			state:        out std_logic_vector(N - 1 downto 0);
+			state:        out std_logic_vector(NETWORK_SIZE - 1 downto 0);
 			state_valid:  out std_logic;
 			state_last:   out std_logic;
 			sim_done:     out std_logic;
@@ -160,7 +160,7 @@ begin
 
 	dishsoap: dishsoap_ctrl
 		generic map (
-			N             => NETWORK_SIZE,
+			NETWORK_SIZE  => NETWORK_SIZE,
 			COUNTER_WIDTH => C_S_AXI_DATA_WIDTH
 		)
 		port map(

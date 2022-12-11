@@ -7,14 +7,14 @@ use ieee.numeric_std.all;
 
 entity dishsoap_ctrl is
 	generic (
-		--! network size (toy network = 3 elements)
-		N: positive := 3;
+		--! network size
+		NETWORK_SIZE: positive;
 		--! size of the 'number of rule steps' counter
-		COUNTER_WIDTH: positive := 16
+		COUNTER_WIDTH: positive
 	);
 	port (
 		--! simulation inputs/config
-		init_state: in std_logic_vector(N-1 downto 0);
+		init_state: in std_logic_vector(NETWORK_SIZE-1 downto 0);
 		num_steps:  in std_logic_vector(COUNTER_WIDTH-1 downto 0);
 
 		--! starts a sim run with configuration above
@@ -23,7 +23,7 @@ entity dishsoap_ctrl is
 		stream_ready: in std_logic;
 
 		--! current state of the network
-		state: out std_logic_vector(N-1 downto 0);
+		state: out std_logic_vector(NETWORK_SIZE-1 downto 0);
 		--! state flags
 		state_valid: out std_logic; --! '1' when state should be saved
 		state_last: out std_logic;  --! '1' when state is the last of the sim
@@ -39,35 +39,31 @@ entity dishsoap_ctrl is
 end dishsoap_ctrl;
 
 architecture behavioral of dishsoap_ctrl is
-	component network_toy is
+	component network is
 		port (
-			A:   in  std_logic;
-			B:   in  std_logic;
-			C:   in  std_logic;
-			A_n: out std_logic;
-			B_n: out std_logic;
-			C_n: out std_logic
+			net:      in  std_logic_vector(NETWORK_SIZE-1 downto 0);
+			net_next: out std_logic_vector(NETWORK_SIZE-1 downto 0)
 		);
 	end component;
-	for net: network_toy use entity work.network_toy;
+	for the_network: network use entity work.network;
 
 	component nw_reg is
 		generic (
-			N: natural
+			NETWORK_SIZE: natural
 		);
 		port (
-			state_next:  in  std_logic_vector(N-1 downto 0);
-			init_state:  in  std_logic_vector(N-1 downto 0);
-			rule_sel:    in  std_logic_vector(N-1 downto 0);
-			force_elems: in  std_logic_vector(N-1 downto 0);
-			force_vals:  in  std_logic_vector(N-1 downto 0);
+			state_next:  in  std_logic_vector(NETWORK_SIZE-1 downto 0);
+			init_state:  in  std_logic_vector(NETWORK_SIZE-1 downto 0);
+			rule_sel:    in  std_logic_vector(NETWORK_SIZE-1 downto 0);
+			force_elems: in  std_logic_vector(NETWORK_SIZE-1 downto 0);
+			force_vals:  in  std_logic_vector(NETWORK_SIZE-1 downto 0);
 			clk:         in  std_logic;
 			en:          in  std_logic;
 			reset:       in  std_logic;
-			state:       out std_logic_vector(N-1 downto 0)
+			state:       out std_logic_vector(NETWORK_SIZE-1 downto 0)
 		);
 	end component;
-	for reg: nw_reg use entity work.nw_reg;
+	for network_reg: nw_reg use entity work.nw_reg;
 
 	type dishsoap_state is (
 		IDLE,
@@ -81,28 +77,24 @@ architecture behavioral of dishsoap_ctrl is
 	signal max_steps:    unsigned(COUNTER_WIDTH-1 downto 0);
 	signal last_state:   std_logic;
 
-	signal net_state:      std_logic_vector(N-1 downto 0);
-	signal net_state_next: std_logic_vector(N-1 downto 0);
+	signal net_state:      std_logic_vector(NETWORK_SIZE-1 downto 0);
+	signal net_state_next: std_logic_vector(NETWORK_SIZE-1 downto 0);
 
 	signal net_update_en: std_logic;
-	signal nw_reg_reset: std_logic;
+	signal nw_reg_reset:  std_logic;
 begin
 
-	-- the Boolean network (network_toy, for now)
-	net: network_toy
+	-- the network, as combinational logic
+	the_network: network
 		port map (
-			A   => net_state(2),
-			B   => net_state(1),
-			C   => net_state(0),
-			A_n => net_state_next(2),
-			B_n => net_state_next(1),
-			C_n => net_state_next(0)
+			net      => net_state,
+			net_next => net_state_next
 		);
 
 	-- the network state register/update controller
-	reg: nw_reg
+	network_reg: nw_reg
 		generic map (
-			N => N
+			NETWORK_SIZE => NETWORK_SIZE
 		)
 		port map (
 			state_next  => net_state_next,

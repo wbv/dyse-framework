@@ -223,8 +223,8 @@ class DishsoapOverlay(pynq.Overlay):
             self.regs = self.dishsoap_0
 
     @property
-    def net_size(self):
-        return 3 #TODO: make dynamic ;)
+    def network_size(self):
+        return int(self.ip_dict['dishsoap_0']['parameters']['NETWORK_SIZE'])
 
 
     @property
@@ -300,9 +300,9 @@ class DishsoapOverlay(pynq.Overlay):
 
     def unpack(self, value) -> np.ndarray:
         if isinstance(value, np.uint64):
-            return state_unpack(value, self.net_size)
+            return state_unpack(value, self.network_size)
         elif isinstance(value, np.ndarray):
-            return np.array([state_unpack(v, self.net_size) for v in value])
+            return np.array([state_unpack(v, self.network_size) for v in value])
 
     def run_synch_inplace(self, init_state, results: PynqBuffer):
         # figure out how many steps we take based on shape of results
@@ -328,7 +328,7 @@ class DishsoapOverlay(pynq.Overlay):
 
         self.run_synch_inplace(init_state, results)
 
-        return [packed_to_list(r,self.net_size) for r in results]
+        return [packed_to_list(r, self.network_size) for r in results]
 
     def run_synch_np(self, init_state: np.uint64, num_steps: int):
 

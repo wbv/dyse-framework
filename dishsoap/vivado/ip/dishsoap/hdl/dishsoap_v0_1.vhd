@@ -4,8 +4,10 @@ use ieee.numeric_std.all;
 
 entity dishsoap_v0_1 is
 	generic (
-		-- User parameters here
-		NETWORK_SIZE: positive := 3;
+		--! DiSHSOAP CONFIG STARTS HERE
+		NETWORK_SIZE: positive := 5;
+		--! DiSHSOAP CONFIG ENDS HERE
+
 		--=====================================================--
 		-- NOTE: Do not modify the parameters beyond this line --
 		--=====================================================--
@@ -71,8 +73,8 @@ architecture behavior of dishsoap_v0_1 is
 	-- component declaration
 	component dishsoap_v0_1_REGS_AXI is
 		generic (
-			C_S_AXI_DATA_WIDTH: integer := C_REGS_AXI_DATA_WIDTH;
-			C_S_AXI_ADDR_WIDTH: integer := C_REGS_AXI_ADDR_WIDTH
+			C_S_AXI_DATA_WIDTH: integer;
+			C_S_AXI_ADDR_WIDTH: integer
 		);
 		port (
 			ready:          in  std_logic;
@@ -111,11 +113,11 @@ architecture behavior of dishsoap_v0_1 is
 
 	component dishsoap_v0_1_SIM_STATE_AXIS is
 		generic (
-			NETWORK_SIZE:          natural := 3;
-			C_S_AXI_DATA_WIDTH:    integer := C_REGS_AXI_DATA_WIDTH;
+			NETWORK_SIZE:          natural;
+			C_S_AXI_DATA_WIDTH:    integer;
 			-- original ports:
-			C_M_AXIS_TDATA_WIDTH:  integer := C_SIM_STATE_AXIS_TDATA_WIDTH;
-			C_M_START_COUNT:       integer := C_SIM_STATE_AXIS_START_COUNT
+			C_M_AXIS_TDATA_WIDTH:  integer;
+			C_M_START_COUNT:       integer
 		);
 		port (
 			init_state:      in  std_logic_vector(NETWORK_SIZE-1 downto 0);
@@ -182,7 +184,7 @@ begin
 -- SIM_STATE_AXIS
 	sim: dishsoap_v0_1_SIM_STATE_AXIS
 		generic map (
-			NETWORK_SIZE         => 3,
+			NETWORK_SIZE         => NETWORK_SIZE,
 			C_S_AXI_DATA_WIDTH   => C_REGS_AXI_DATA_WIDTH,
 			-- original ports:
 			C_M_AXIS_TDATA_WIDTH => C_SIM_STATE_AXIS_TDATA_WIDTH,
