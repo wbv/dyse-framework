@@ -5,7 +5,7 @@ use ieee.numeric_std.all;
 entity dishsoap_v0_1 is
 	generic (
 		--! DiSHSOAP CONFIG STARTS HERE
-		NETWORK_SIZE: positive := 61;
+		NETWORK_SIZE: positive := 5;
 		--! DiSHSOAP CONFIG ENDS HERE
 
 		--=====================================================--

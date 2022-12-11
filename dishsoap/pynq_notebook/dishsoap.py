@@ -226,6 +226,11 @@ class DishsoapOverlay(pynq.Overlay):
     def network_size(self):
         return int(self.ip_dict['dishsoap_0']['parameters']['NETWORK_SIZE'])
 
+    @property
+    def elements(self):
+        # cheat: hardcode this for demo until it's inserted as part of the
+        # synthesis + config step
+        return ['TF', 'Inh', 'Xgene', 'Xrna', 'Xprotein']
 
     @property
     def dma_status(self):
@@ -323,12 +328,13 @@ class DishsoapOverlay(pynq.Overlay):
 
     def run_synch(self, init_state: Sequence[int], num_steps: int):
 
-        if results is None:
-            results = pynq.allocate(shape=(num_steps+1,), dtype=np.uint64)
+        results = pynq.allocate(shape=(num_steps+1,), dtype=np.uint64)
 
         self.run_synch_inplace(init_state, results)
 
-        return [packed_to_list(r, self.network_size) for r in results]
+        list_by_time = [packed_to_list(r, self.network_size) for r in results]
+        list_by_element = [[r[i] for r in list_by_time] for i in range(self.network_size)]
+        return list_by_element
 
     def run_synch_np(self, init_state: np.uint64, num_steps: int):
 
