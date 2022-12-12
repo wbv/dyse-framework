@@ -1,0 +1,2 @@
+# time Inh TF Xgene Xprotein Xrna step
+0  1 0 0 0 0 0
