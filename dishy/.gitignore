@@ -1,0 +1,8 @@
+# vim detritus
+*.swp
+
+# object files
+*.o
+
+# executables
+dish_synch
