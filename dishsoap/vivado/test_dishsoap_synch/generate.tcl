@@ -182,7 +182,7 @@ set_property -dict [list \
 create_bd_cell -type ip -vlnv wbv:user:dishsoap:0.1 dishsoap_0
 set_property -dict [list \
 	CONFIG.C_REGS_AXI_ADDR_WIDTH {8} \
-	CONFIG.NETWORK_SIZE {5} \
+	CONFIG.NETWORK_SIZE {61} \
 ] [get_bd_cells dishsoap_0]
 
 
