@@ -5,4 +5,4 @@
 *.o
 
 # executables
-dish_synch
+dish_*

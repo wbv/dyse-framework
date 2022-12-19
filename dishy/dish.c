@@ -2,9 +2,14 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <time.h>
 
 
 typedef uint_fast8_t state_t;
+
+
+#if defined(DISH_TCELL)
+
 #define NET_SIZE (61)
 
 // T-cell regulatory network update functions for each element.
@@ -77,17 +82,41 @@ void update(state_t* net) {
 	// now we can update net
 	memcpy(net, net_next, sizeof(state_t) * NET_SIZE);
 }
+#elif defined(DISH_GENE)
+
+#define NET_SIZE (5)
+
+// Gene regulation network
+void update(state_t* net) {
+	// fill net_next with the computed next-states of net
+	state_t net_next[NET_SIZE];
+	net_next[0]  = net[0];
+	net_next[1]  = net[1];
+	net_next[2]  = net[0] && (! net[1]);
+	net_next[3]  = net[2];
+	net_next[4]  = net[3];
+
+	// now we can update net
+	memcpy(net, net_next, sizeof(state_t) * NET_SIZE);
+}
+
+#else
+#error no network model defined
+#endif // DISH_ network definition
 
 
-int main(int argc, char** argv) {
-	int num_steps = (argc > 1) ? atoi(argv[1]) : 4096;
-
+void bench(int num_steps) {
+#if defined(DISH_TCELL)
 	// default state --> scenario 0 from the xlsx
 	state_t net[NET_SIZE] = {
 		0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1
 	};
+#elif defined(DISH_GENE)
+	// default state --> scenario 0 from the xlsx
+	state_t net[NET_SIZE] = {1, 0, 0, 0, 0};
+#endif // DISH_ network definition
 
 	printf("# step ");
 	for (int i = 0; i < NET_SIZE; i++) {
@@ -110,6 +139,38 @@ int main(int argc, char** argv) {
 		printf("%u ", net[i]);
 	}
 	printf("\n");
+}
+
+int main(int argc, char** argv) {
+	#define NUM_STEPS (4096)
+	#define NUM_LOOPS (100)
+	#define NUM_RUNS  (7)
+
+	int num_steps = (argc > 1) ? atoi(argv[1]) : NUM_STEPS;
+
+	for (int i = 0; i < NUM_LOOPS; i++) {
+		double averagetime = 0;
+		for (int run = 0; run < NUM_RUNS; run++) {
+
+			// track elapsed wall time
+			struct timespec start, finish;
+			timespec_get(&start, TIME_UTC);
+			bench(num_steps);
+			timespec_get(&finish, TIME_UTC);
+
+			intmax_t  seconds = finish.tv_sec  - start.tv_sec;
+			intmax_t  ns      = finish.tv_nsec - start.tv_nsec;
+
+			// carry the 1 over from nanoseconds subtraction if necessary
+			if (ns < 0) {
+				seconds -= 1;
+				ns += (1000 * 1000 * 1000);
+			}
+			averagetime += (double)(seconds + (1e-9 * ns));
+		}
+		fprintf(stderr, "%15.9f ", averagetime/NUM_RUNS);
+	}
+	fprintf(stderr, "\n");
 
 	return 0;
 }
