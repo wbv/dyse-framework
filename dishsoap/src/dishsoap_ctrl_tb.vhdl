@@ -14,15 +14,15 @@ end dishsoap_ctrl_tb;
 architecture test of dishsoap_ctrl_tb is
 	component dishsoap_ctrl
 		generic (
-			N: natural := N;
+			NETWORK_SIZE: natural := N;
 			COUNTER_WIDTH: positive := COUNTER_WIDTH
 		);
 		port (
-			init_state:   in  std_logic_vector(N - 1 downto 0);
+			init_state:   in  std_logic_vector(NETWORK_SIZE - 1 downto 0);
 			num_steps:    in  std_logic_vector(COUNTER_WIDTH - 1 downto 0);
 			go:           in  std_logic;
 			stream_ready: in  std_logic;
-			state:        out std_logic_vector(N - 1 downto 0);
+			state:        out std_logic_vector(NETWORK_SIZE - 1 downto 0);
 			state_valid:  out std_logic;
 			state_last:   out std_logic;
 			sim_done:     out std_logic;
@@ -57,7 +57,7 @@ begin
 
 	uut: dishsoap_ctrl
 		generic map (
-			N => N,
+			NETWORK_SIZE => N,
 			COUNTER_WIDTH => COUNTER_WIDTH
 		)
 		port map (

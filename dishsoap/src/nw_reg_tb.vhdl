@@ -11,18 +11,18 @@ end nw_reg_tb;
 architecture test of nw_reg_tb is
 	component nw_reg
 		generic (
-			N : natural := N
+			NETWORK_SIZE : natural := N
 		);
 		port (
-			state_next:  in  std_logic_vector(N - 1 downto 0);
-			init_state:  in  std_logic_vector(N - 1 downto 0);
-			rule_sel:    in  std_logic_vector(N - 1 downto 0);
-			force_elems: in  std_logic_vector(N - 1 downto 0);
-			force_vals:  in  std_logic_vector(N - 1 downto 0);
+			state_next:  in  std_logic_vector(NETWORK_SIZE - 1 downto 0);
+			init_state:  in  std_logic_vector(NETWORK_SIZE - 1 downto 0);
+			rule_sel:    in  std_logic_vector(NETWORK_SIZE - 1 downto 0);
+			force_elems: in  std_logic_vector(NETWORK_SIZE - 1 downto 0);
+			force_vals:  in  std_logic_vector(NETWORK_SIZE - 1 downto 0);
 			clk:         in  std_logic;
 			en:          in  std_logic;
 			reset:       in  std_logic;
-			state:       out std_logic_vector(N - 1 downto 0)
+			state:       out std_logic_vector(NETWORK_SIZE - 1 downto 0)
 		);
 	end component;
 	for uut: nw_reg use entity work.nw_reg;
@@ -48,7 +48,7 @@ begin
 
 	uut: nw_reg
 		generic map (
-			N => N
+			NETWORK_SIZE => N
 		)
 		port map (
 			state_next   => state_next,
